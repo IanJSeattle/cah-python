@@ -1,0 +1,98 @@
+[
+  {
+    "type": "Question",
+    "value": "What is the NSA using secret backdoors in the Linux kernel for?",
+    "keep": "Yes",
+    "draw": 0,
+    "pick": 1,
+    "source": "Eidolon Addendum Set"
+  },
+  {
+    "type": "Question",
+    "value": "WikiLeaks hopes to shock the world when it reveals the US government has engaged in %s.",
+    "keep": "Yes",
+    "draw": 0,
+    "pick": 1,
+    "source": "Eidolon Addendum Set"
+  },
+  {
+    "type": "Question",
+    "value": "I want web-based %s on a %s server!",
+    "keep": "Yes",
+    "draw": 1,
+    "pick": 2,
+    "source": "Eidolon Addendum Set"
+  },
+  {
+    "type": "Question",
+    "value": "Kevin Mitnick called, he wants his %s back.",
+    "keep": "Yes",
+    "draw": 0,
+    "pick": 1,
+    "source": "Eidolon Addendum Set"
+  },
+  {
+    "type": "Question",
+    "value": "Ted Cruz was just revealed to have performed %s with %s!",
+    "keep": "Yes",
+    "draw": 1,
+    "pick": 2,
+    "source": "Eidolon Addendum Set"
+  },
+  {
+    "type": "Question",
+    "value": "Next on TMZ, %s was caught %s with %s!",
+    "keep": "Yes",
+    "draw": 2,
+    "pick": 3,
+    "source": "Eidolon Addendum Set"
+  },
+  {
+    "type": "Question",
+    "value": "Inserting %s into %s: The Story of %s",
+    "keep": "Yes",
+    "draw": 2,
+    "pick": 3,
+    "source": "Eidolon Addendum Set"
+  },
+  {
+    "type": "Question",
+    "value": "The latest Republican scheme to cut spending would take %s away from %s.",
+    "keep": "Yes",
+    "draw": 1,
+    "pick": 2,
+    "source": "Eidolon Addendum Set"
+  },
+  {
+    "type": "Question",
+    "value": "Gentlemen!  A toast!  To %s!",
+    "keep": "Yes",
+    "draw": 0,
+    "pick": 1,
+    "source": "Eidolon Addendum Set"
+  },
+  {
+    "type": "Question",
+    "value": "I always look forward to %s when the bossman isn't looking.",
+    "keep": "Yes",
+    "draw": 0,
+    "pick": 1,
+    "source": "Eidolon Addendum Set"
+  },
+  {
+    "type": "Question",
+    "value": "In his house at R'yleh, dead %s waits dreaming",
+    "keep": "Yes",
+    "draw": 0,
+    "pick": 1,
+    "source": "Eidolon Addendum Set"
+  },
+  {
+    "type": "Question",
+    "value": "What's the latest non-Open-Source Linux device driver for?",
+    "keep": "Yes",
+    "draw": 0,
+    "pick": 1,
+    "source": "Eidolon Addendum Set"
+  }
+]

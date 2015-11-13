@@ -1,0 +1,37 @@
+basic structure of a CAH game is:
+
+init: load cards, load config, join irc channel
+
+wait for start command
+
+then loop:
+add users to game
+deal cards to users
+show question
+collect answers
+wait for winner selection
+record results
+
+once game is done, record stats, reset deck, wait for start command
+
+
+
+commands we want to have:
+
+join
+start
+play/pick
+winner/pick
+cards
+status
+score/shame
+detail cardnum - shows info on card
+
+ideally, commands are just entered, and if they don't make sense, are
+ignored.  additional verbiage is also ignored (pick 0 2 because why
+not).  if someone says, 'pick up the pace,' it's ignored (no numbers).
+commands that take no args are ignored if there's any trailing stuff
+('start making sense' doesn't start a game).
+
+commands issued to the cardbot via private message are, where sensible,
+responded via pm as well -- cards, status, score, detail.

@@ -1,0 +1,82 @@
+[
+  {
+    "type": "Question",
+    "value": "Dumbledore had to stop his experiment when he accidentally summoned %s.",
+    "keep": "Yes",
+    "draw": 0,
+    "pick": 1,
+    "source": "Harry Potter Unofficial Expansion Set"
+  },
+  {
+    "type": "Question",
+    "value": "Ron quickly hid %s when Hermione walked in",
+    "keep": "Yes",
+    "draw": 0,
+    "pick": 1,
+    "source": "Harry Potter Unofficial Expansion Set"
+  },
+  {
+    "type": "Question",
+    "value": "What is Hagrid's latest terrifying hybrid? %s crossed with %s.",
+    "keep": "Yes",
+    "draw": 1,
+    "pick": 2,
+    "source": "Harry Potter Unofficial Expansion Set"
+  },
+  {
+    "type": "Question",
+    "value": "What was Voldemort furiously masturbating to?",
+    "keep": "Yes",
+    "draw": 0,
+    "pick": 1,
+    "source": "Harry Potter Unofficial Expansion Set"
+  },
+  {
+    "type": "Question",
+    "value": "The latest threat to Hogwarts School of Wizardry is %s.",
+    "keep": "Yes",
+    "draw": 0,
+    "pick": 1,
+    "source": "Harry Potter Unofficial Expansion Set"
+  },
+  {
+    "type": "Question",
+    "value": "What memory terrified Harry when he saw it in the Pensieve pool?",
+    "keep": "Yes",
+    "draw": 0,
+    "pick": 1,
+    "source": "Harry Potter Unofficial Expansion Set"
+  },
+  {
+    "type": "Question",
+    "value": "Hermione sighed with eager anticipation: %s.",
+    "keep": "Yes",
+    "draw": 0,
+    "pick": 1,
+    "source": "Harry Potter Unofficial Expansion Set"
+  },
+  {
+    "type": "Question",
+    "value": "Why are we wearing these black, hooded robes?",
+    "keep": "Yes",
+    "draw": 0,
+    "pick": 1,
+    "source": "Harry Potter Unofficial Expansion Set"
+  },
+  {
+    "type": "Question",
+    "value": "Harry's wand misfired, creating %s.",
+    "keep": "Yes",
+    "draw": 0,
+    "pick": 1,
+    "source": "Harry Potter Unofficial Expansion Set"
+  },
+  {
+    "type": "Question",
+    "value": "What made McGonagal giggle like a schoolgirl?",
+    "keep": "Yes",
+    "draw": 0,
+    "pick": 1,
+    "source": "Harry Potter Unofficial Expansion Set"
+  }
+]
