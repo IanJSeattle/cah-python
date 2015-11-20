@@ -7,7 +7,7 @@ import json
 class Deck(object):
     """ a Deck represents a set of cards, and may contain either
     Question or Answer cards, accessed via an argument to the deal()
-    method. """
+    method. this simplifies reading in cards from files. """
 
     def __init__(self, cards=None):
         """ self.cards is an array of Card objects """
@@ -25,10 +25,10 @@ class Deck(object):
             self.answercards.append(thiscard)
         else:
             self.questioncards.append(thiscard)
-        return True
 
-    def deal(self, cardtype='Question', num=None):
-        """ return one Card from the Deck """
+    def deal(self, cardtype, num=None):
+        """ return one Card from the Deck, removing it from available
+        cards, and putting it in the appropriate dealt card stack. """
         if cardtype == 'Answer':
             if num == None:
                 card = self.answercards.pop()
@@ -47,7 +47,6 @@ class Deck(object):
        """ shuffle all the Cards in the Deck """
        shuffle(self.answercards) 
        shuffle(self.questioncards) 
-       return True
 
     def __len__(self):
         """ special function for length,  """
@@ -64,8 +63,14 @@ class Deck(object):
                 newcard.source = tmpcard['source']
                 self.add(newcard)
     
-    def show_hand(self, cardtype='Question'):
+    def show_hand(self, cardtype):
         if cardtype == 'Answer':
             return [card.value for card in self.answercards]
         else:
             return [card.value for card in self.questioncards]
+
+    def reset(self):
+        self.answercards += self.dealt_answers
+        self.dealt_answers = []
+        self.questioncards += self.dealt_questions
+        self.dealt_questions = []
