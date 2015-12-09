@@ -3,12 +3,17 @@
 from deck import Deck
 
 class Player(object):
-    def __init__(self, name):
-        self.name = name
+    def __init__(self, ID):
+        self.ID = ID
+        self.name = ID
         self.deck = Deck()
         self.game_wins = 0
         self.overall_wins = 0
         self.games_played = 0
+
+    def __repr__(self):
+        return '{} [{}, {}/{}]'.format(self.name, self.game_wins,
+            self.overall_wins, self.games_played)
 
     def record_win(self):
         self.game_wins += 1
