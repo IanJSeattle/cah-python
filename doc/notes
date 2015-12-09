@@ -35,3 +35,59 @@ commands that take no args are ignored if there's any trailing stuff
 
 commands issued to the cardbot via private message are, where sensible,
 responded via pm as well -- cards, status, score, detail.
+
+
+structure of the objects:
+
+Game: knows everything about the game itself: players, card decks,
+current status, scores, who's the czar, etc.
+
+Player: knows everything about the player: card hand, score, stats,
+identifying IRC info
+
+Config: knows about config stuff, as defined in an external file
+
+Deck: knows about a handful of Cards, and includes Card manipulations
+like shuffling, showing a hand, adding cards, and dealing cards.  this
+also loads cards from a file.
+
+Card: knows about an individual card: what the text is, whether it's an
+answer or a question, how many to pick, how many to play, etc.
+
+IRC: knows about IRC stuff: how to receive messages, how to send
+messages, how to find info about users who join, what server we're
+talking to, etc.
+
+CmdParser: knows how to parse a command: given a string, spit out the
+correct command string, and the appropriate arguments
+
+
+a main function will:
+
+* load Config
+* join IRC (using the IRC class)
+* wait until it receives a start command
+* register all users who communicate as Players, so that if one tries
+  to join, that Player can be passed to the CmdParser
+
+upon start:
+
+* start a new Game
+* register the starting player as player 0 and the czar
+* wait for other players to join
+
+upon join:
+
+* register joining player
+
+upon min_players reached:
+
+* start the game
+* deal cards to players
+* present first question card
+* wait for answers
+
+if a new player joins (up to max_players):
+* add them to the player list
+* deal them a set of cards
+* let them loose and wait for an answer

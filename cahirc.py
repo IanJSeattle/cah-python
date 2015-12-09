@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# vi: set wm=0 ts=4 sw=4 et:
 #
 # Example program using irc.bot.
 #
@@ -23,14 +24,17 @@ nickname, nickname)
     def on_privmsg(self, c, e):
         self.do_command(e, e.arguments[0])
 
-	# this will be extended to listen for key commands
+    # this will be extended to listen for key commands
     def on_pubmsg(self, c, e):
         a = e.arguments[0].split(":", 1)
         if len(a) > 1 and irc.strings.lower(a[0]) == irc.strings.lower(self.connection.get_nickname()):
             self.do_command(e, a[1].strip())
         return
 
-	# use privmsg to the channel or the user
+    def say(self, recipient, text):
+        self.connection.privmsg(recipient, text)
+
+    # use privmsg to the channel or the user
     def do_command(self, e, cmd):
         nick = e.source.nick
         c = self.connection
@@ -76,7 +80,7 @@ def main():
     channel = sys.argv[2]
     nickname = sys.argv[3]
 
-    bot = TestBot(channel, nickname, server, port)
+    bot = IRCBot(channel, nickname, server, port)
     bot.start()
 
 if __name__ == "__main__":
