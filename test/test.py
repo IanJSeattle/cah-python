@@ -1,9 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # vi:set expandtab ai:
 
 import unittest, sys, os
-from unittest.mock import MagicMock
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 sys.path.append('..')
 sys.path.append('.')
