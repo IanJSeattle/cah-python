@@ -41,6 +41,8 @@ nickname, nickname)
 
         if cmd == "disconnect":
             self.disconnect()
+        elif cmd == 'users':
+            self.say(nick, self.channels['#test'].userdict)
         elif cmd == "die":
             self.die()
         elif cmd == "stats":

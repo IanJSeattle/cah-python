@@ -3,9 +3,8 @@
 from deck import Deck
 
 class Player(object):
-    def __init__(self, ID):
-        self.ID = ID
-        self.name = ID
+    def __init__(self, name):
+        self.name = name
         self.deck = Deck()
         self.game_wins = 0
         self.overall_wins = 0
