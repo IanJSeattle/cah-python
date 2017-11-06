@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # vi:set expandtab ai:
 
-import unittest, sys, os
+import unittest, sys, os, re
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
@@ -489,7 +489,7 @@ class ParserTest(unittest.TestCase):
         cmdstring = 'play 1'
         p = CmdParser(cmdstring, game, jim)
         game.command(p)
-        self.assertEqual([jimcard], game.answers[jim])
+        self.assertEqual([jimcard], game.answers[jim]['cards'])
 
     def test_dealing_inorder_cards_works(self):
         game = gameclass.Game()
@@ -504,7 +504,7 @@ class ParserTest(unittest.TestCase):
         cmdstring = 'play 1 2 3'
         p = CmdParser(cmdstring, game, jim)
         game.command(p)
-        self.assertEqual(jimcards, game.answers[jim])
+        self.assertEqual(jimcards, game.answers[jim]['cards'])
 
     def test_dealing_wackorder_cards_works(self):
         game = gameclass.Game()
@@ -522,7 +522,7 @@ class ParserTest(unittest.TestCase):
         cmdstring = 'play 3 1 7'
         p = CmdParser(cmdstring, game, jim)
         game.command(p)
-        self.assertEqual(jimcards, game.answers[jim])
+        self.assertEqual(jimcards, game.answers[jim]['cards'])
 
 
 class ConfigTest(unittest.TestCase):
@@ -536,6 +536,9 @@ class ConfigTest(unittest.TestCase):
 
 
 class GameIRCTest(unittest.TestCase):
+    def setUp(self):
+        gameclass.cahirc.IRCBot.say.reset_mock()
+
     def test_game_start_says_game_start(self):
         config = Config()
         chan = config.data['default_channel']
@@ -594,8 +597,79 @@ class GameIRCTest(unittest.TestCase):
         p.parse('join')
         p.player = joe
         game.command(p)
-        print(joe.show_hand())
         self.assertEqual(10, len(joe.show_hand()))
+
+    def test_first_question_displays(self):
+        config = Config().data
+        chan = config['default_channel']
+        game = gameclass.Game()
+        bob = Player('Bob')
+        joe = Player('Joe')
+        jim = Player('Jim')
+        game.start()
+        game.add_player(bob)
+        game.add_player(joe)
+        game.add_player(jim)
+        self.assertTrue(re.search('Card: ', 
+            str(gameclass.cahirc.IRCBot.say.mock_calls[2])))
+
+    def test_joe_gets_cards(self):
+        config = Config().data
+        game = gameclass.Game()
+        bob = Player('Bob')
+        joe = Player('Joe')
+        jim = Player('Jim')
+        game.start()
+        game.add_player(bob)
+        game.add_player(joe)
+        game.add_player(jim)
+        self.assertTrue(re.search('Your cards are: ', 
+            str(gameclass.cahirc.IRCBot.say.mock_calls[3])))
+
+    def test_candidates_are_announced(self):
+        config = Config().data
+        game = gameclass.Game()
+        bob = Player('Bob')
+        joe = Player('Joe')
+        jim = Player('Jim')
+        game.start()
+        game.add_player(bob)
+        game.add_player(joe)
+        game.add_player(jim)
+        game.play(joe, joe.deal(1))
+        game.play(jim, jim.deal(1))
+        played_annc = config['text']['en']['all_cards_played']
+        self.assertTrue(re.search(played_annc,
+            str(gameclass.cahirc.IRCBot.say.mock_calls[5])))
+
+
+class ResponseTest(unittest.TestCase):
+    def test_round_num_displays(self):
+        game = gameclass.Game()
+        bob = Player('Bob')
+        joe = Player('Joe')
+        jim = Player('Jim')
+        game.start()
+        game.add_player(bob)
+        game.add_player(joe)
+        game.add_player(jim)
+        self.assertTrue(re.search("Round 1!",
+            str(gameclass.cahirc.IRCBot.say.mock_calls[1])))
+        self.assertTrue(re.search("Bob is the card czar",
+            str(gameclass.cahirc.IRCBot.say.mock_calls[1])))
+
+    def test_answers_are_displayed(self):
+        game = gameclass.Game()
+        bob = Player('Bob')
+        joe = Player('Joe')
+        jim = Player('Jim')
+        game.start()
+        game.add_player(bob)
+        game.add_player(joe)
+        game.add_player(jim)
+        question = game.question
+        game.play(joe, joe.deal(1))
+        game.play(jim, jim.deal(1))
 
 
 if __name__ == '__main__':

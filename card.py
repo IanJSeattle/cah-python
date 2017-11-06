@@ -1,3 +1,5 @@
+# vi: set et ai sm:
+
 class Card(object):
     def __init__(self, cardtype, value):
         self.cardtype = cardtype
@@ -5,6 +7,9 @@ class Card(object):
         self.draw = 0
         self.pick = 1
         self.source = 'unknown'
+
+    def __repr__(self):
+        return self.info()
 
     def info(self):
         return '[{}] {}: {} (pick {} draw {})'.format(self.source,
