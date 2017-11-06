@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # vi:set expandtab ai:
 
 import unittest, sys, os, re
