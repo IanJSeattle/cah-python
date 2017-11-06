@@ -76,8 +76,7 @@ class Game(object):
 
     def next_czar(self):
         self._czar += 1
-        if self._czar >= len(self.players):
-            self._czar = 0
+        self._czar %= len(self.players)
         return self.czar
 
     def commence(self):

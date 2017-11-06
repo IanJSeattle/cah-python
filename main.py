@@ -1,10 +1,11 @@
 # vi: set expandtab ai:
 
+import os
+import config
 from player import Player
 from card import Card
 from deck import Deck
-import os
-import config
+
 
 def load_cards():
     currdir = os.getcwd()
@@ -25,4 +26,6 @@ def main():
     newcard = thisdeck.deal('Answer')
     print(thisdeck.get_cards('Question'))
 
-main()
+
+if __name__ == '__main__':
+    main()
