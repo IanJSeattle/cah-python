@@ -1,30 +1,17 @@
 # vi: set expandtab ai:
 
 import os
-import config
+from config import Config
 from player import Player
 from card import Card
 from deck import Deck
+from game import Game
 
 
-def load_cards():
-    currdir = os.getcwd()
-    os.chdir(config.CONFIG['carddir'])
-    files = os.listdir()
-    thisdeck = Deck()
-    for thisfile in files:
-        if not thisfile.endswith('json'):
-            continue
-        thisdeck.read_in(thisfile)
-    os.chdir(currdir)
-    return thisdeck
-        
-    
 def main():
-    thisdeck = load_cards()
-    thisdeck.shuffle()
-    newcard = thisdeck.deal('Answer')
-    print(thisdeck.get_cards('Question'))
+    game = Game()
+    parser = CmdParse(game)
+    # how is an IRC nick turned into a Player name?
 
 
 if __name__ == '__main__':

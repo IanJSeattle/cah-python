@@ -7,6 +7,7 @@ from player import Player
 from cahirc import IRCBot
 import cahirc
 from random import shuffle
+from exceptions import NotPermitted
 
 class Game(object):
     def __init__(self):
@@ -43,7 +44,7 @@ class Game(object):
     def play(self, player, cards):
         """ cards is an array of Card objects """
         if player == self.czar:
-            raise RuntimeError('czar may not play')
+            raise NotPermitted('czar may not play')
         if player not in self.answers:
             self.answers[player] = {}
             if type(cards) is not list:
@@ -51,15 +52,19 @@ class Game(object):
             else:
                 self.answers[player]['cards'] = cards
         else:
-            raise RuntimeError('multiple answers not allowed')
+            raise NotPermitted('multiple answers not allowed')
         if len(self.answers) == len(self.players) - 1:
             self.status = 'wait_czar'
             self.announce_answers()
 
     def winner(self, player):
         """ record the winner of the round """
-        player.game_wins += 1
+        player.record_win()
         self.next_czar()
+
+    def join(self, player, args):
+        """ add a new player to the game """
+        self.add_player(player)
 
 
     #-----------------------------------------------------------------

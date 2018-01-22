@@ -8,7 +8,7 @@ class CmdParser(object):
     """ this class represents the command parsing structure for the
     game. """
 
-    def __init__(self, string, game, player=None):
+    def __init__(self, game):
         self.Args = namedtuple('Args', 'hasargs required cardargs')
         self.cmdargs = { 'pick': self.Args(True, True, False),
                      'play': self.Args(True, True, True),
@@ -28,12 +28,11 @@ class CmdParser(object):
         # the maximum number of arguments any command can take
         self.max_args = 3
         self.game = game
-        self.string = string
-        self.player = player
-        self.words = string.split()
+        self._string = None
+        self.player = None
+        self.words = []
         self.args = []
         self.command = None
-        self.parse()
 
     def is_command(self):
         if self.words[0] in self.cmdargs:
@@ -47,7 +46,9 @@ class CmdParser(object):
             if re.search('^\d$', self.words[i]):
                 self.args.append(int(self.words[i]))
 
-    def parse(self, string=None):
+    def parse(self, string=None, player=None):
+        if player is not None:
+            self.player = player
         if string is not None:
             self.string = string
         if not self.is_command():
@@ -81,3 +82,18 @@ class CmdParser(object):
         # now discard those cards from player's hand
         for num in nums:
             self.player.deal(num)
+
+
+    #-----------------------------------------------------------------------
+    # properties
+    #-----------------------------------------------------------------------
+
+    @property
+    def string(self):
+        return self._string
+
+
+    @string.setter
+    def string(self, info):
+        self._string = info
+        self.words = info.split()
