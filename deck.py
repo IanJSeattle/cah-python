@@ -3,6 +3,7 @@
 from random import shuffle
 from card import Card
 import json
+from exceptions import NoMoreCards
 
 class Deck(object):
     """ a Deck represents a set of cards, and may contain either
@@ -37,7 +38,10 @@ class Deck(object):
             self.dealt_answers.append(card)
         else:
             if num == None:
-                card = self.questioncards.pop()
+                try:
+                    card = self.questioncards.pop()
+                except IndexError:
+                    raise NoMoreCards
             else:
                 card = self.questioncards.pop(num)
             self.dealt_questions.append(card)
