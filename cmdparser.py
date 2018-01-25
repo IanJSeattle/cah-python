@@ -2,13 +2,16 @@
 
 import re
 from collections import namedtuple
+from typing import List
+from game import Game
+from player import Player
 
 
 class CmdParser(object):
     """ this class represents the command parsing structure for the
     game. """
 
-    def __init__(self, game):
+    def __init__(self, game: Game):
         self.Args = namedtuple('Args', 'hasargs required cardargs')
         self.cmdargs = { 'pick': self.Args(True, True, False),
                      'play': self.Args(True, True, True),
@@ -28,25 +31,26 @@ class CmdParser(object):
         # the maximum number of arguments any command can take
         self.max_args = 3
         self.game = game
+        self.ircmsg = None
         self._string = None
         self.player = None
         self.words = []
         self.args = []
         self.command = None
 
-    def is_command(self):
+    def is_command(self) -> bool:
         if self.words[0] in self.cmdargs:
             return True
         return False
 
-    def get_args(self):
+    def get_args(self) -> None:
         for i in range(1, len(self.words)):
             if i > self.max_args:
                 return
             if re.search('^\d$', self.words[i]):
                 self.args.append(int(self.words[i]))
 
-    def parse(self, string=None, player=None):
+    def parse(self, string:str=None, player:Player=None) -> None:
         if player is not None:
             self.player = player
         if string is not None:
@@ -59,17 +63,18 @@ class CmdParser(object):
             self.get_args()
             if self.args == [] and self.cmdargs[self.command].required:
                 self.command = None
+                return
         if self.player is not None and self.cmdargs[self.command].cardargs == True:
             self.deal_cards()
 
-    def get_alias(self):
+    def get_alias(self) -> str:
         for alias in self.aliases:
             if self.words[0] == alias.alias and (self.game.status == 
                 alias.state or alias.state == 'any'):
                 return alias.command
         return self.words[0]
 
-    def deal_cards(self):
+    def deal_cards(self) -> None:
         cardargs = []
         nums = []
         # this seemed easier than doing math to track cards as they're

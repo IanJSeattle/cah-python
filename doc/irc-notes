@@ -1,0 +1,12 @@
+irc goo sends an event object, which has these interesting things to
+say about a given user:
+
+(Pdb) e.source
+'reaper-test!~reaper@207.66.255.52'
+(Pdb) e.source.nick
+'reaper-test'
+(Pdb) e.source.user
+'~reaper'
+(Pdb) e.source.host
+'207.66.255.52'
+
