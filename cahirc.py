@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# vi: set wm=0 ts=4 sw=4 et:
+# vi: set ai wm=0 ts=4 sw=4 et:
 #
 # Example program using irc.bot.
 #
@@ -7,13 +7,17 @@
 
 import irc.bot
 import irc.strings
-from irc.client import ip_numstr_to_quad, ip_quad_to_numstr
+from irc.client import ip_numstr_to_quad, ip_quad_to_numstr, Event, NickMask
+from config import Config
 
-class IRCBot(irc.bot.SingleServerIRCBot):
-    def __init__(self, channel, nickname, server, port=6667):
-        irc.bot.SingleServerIRCBot.__init__(self, [(server, port)],
-nickname, nickname)
-        self.channel = channel
+class Cahirc(irc.bot.SingleServerIRCBot):
+    def __init__(self, game):
+        config = Config().data
+        port = config['port'] if 'port' in config else 6667
+        super().__init__([(config['server'], port)], config['my_nick'], 
+            config['my_nick'])
+        self.channel = config['default_channel']
+        self.game = game
 
     def on_nicknameinuse(self, c, e):
         c.nick(c.get_nickname() + "_")
@@ -21,70 +25,40 @@ nickname, nickname)
     def on_welcome(self, c, e):
         c.join(self.channel)
 
-    def on_privmsg(self, c, e):
-        self.do_command(e, e.arguments[0])
+    def on_privmsg(self, c, event):
+        tell_game(self, c, event)
 
-    # this will be extended to listen for key commands
-    def on_pubmsg(self, c, e):
-        a = e.arguments[0].split(":", 1)
-        if len(a) > 1 and irc.strings.lower(a[0]) == irc.strings.lower(self.connection.get_nickname()):
-            self.do_command(e, a[1].strip())
-        return
+    def on_pubmsg(self, c, event):
+        tell_game(self, c, event)
+
+    def tell_game(self, c, event):
+        nick = event.source.nick
+        user = event.source.user
+        game.receive_irc(str(event.type), nick, user, str(event.arguments[0]))
 
     def say(self, recipient, text):
         self.connection.privmsg(recipient, text)
 
-    # use privmsg to the channel or the user
-    def do_command(self, e, cmd):
-        nick = e.source.nick
-        c = self.connection
+    # some other process will have to call irc.start(), i guess
 
-        if cmd == "disconnect":
-            self.disconnect()
-        elif cmd == 'users':
-            self.say(nick, self.channels['#test'].userdict)
-        elif cmd == "die":
-            self.die()
-        elif cmd == "stats":
-            for chname, chobj in self.channels.items():
-                c.notice(nick, "--- Channel statistics ---")
-                c.notice(nick, "Channel: " + chname)
-                users = sorted(chobj.users())
-                c.notice(nick, "Users: " + ", ".join(users))
-                opers = sorted(chobj.opers())
-                c.notice(nick, "Opers: " + ", ".join(opers))
-                voiced = sorted(chobj.voiced())
-                c.notice(nick, "Voiced: " + ", ".join(voiced))
-        elif cmd == "dcc":
-            dcc = self.dcc_listen()
-            c.ctcp("DCC", nick, "CHAT chat %s %d" % (
-                ip_quad_to_numstr(dcc.localaddress),
-                dcc.localport))
-        else:
-            c.notice(nick, "Not understood: " + cmd)
 
-def main():
-    import sys
-    if len(sys.argv) != 4:
-        print("Usage: testbot <server[:port]> <channel> <nickname>")
-        sys.exit(1)
+class IRCmsg(object):
+    def __init__(self, game, event):
+        self.nick = event.source.nick
+        self.user = event.source.user
+        self.msg = event.arguments[0]
+        self.source = event.type
+        self.game = game
 
-    s = sys.argv[1].split(":", 1)
-    server = s[0]
-    if len(s) == 2:
-        try:
-            port = int(s[1])
-        except ValueError:
-            print("Error: Erroneous port.")
-            sys.exit(1)
-    else:
-        port = 6667
-    channel = sys.argv[2]
-    nickname = sys.argv[3]
+    def get_player(self):
+        for player in self.game.players:
+            if player.nick == self.nick:
+                return player
+        return None
 
-    bot = IRCBot(channel, nickname, server, port)
-    bot.start()
 
-if __name__ == "__main__":
-    main()
-
+class fakeIRCmsg(IRCmsg):
+    def __init__(self, game, string, user='Bob!~bobbo@127.0.0.1'):
+        nm = NickMask(user)
+        event = Event('privmsg', nm, '#test', [string])
+        super().__init__(game, event)

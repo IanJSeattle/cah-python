@@ -1,10 +1,11 @@
 # vi: set expandtab ai:
 
 import config, os, re
+from typing import List
 from deck import Deck
 from card import Card
 from player import Player
-from cahirc import IRCBot
+from cahirc import Cahirc
 import cahirc
 from random import shuffle
 from exceptions import NotPermitted
@@ -20,18 +21,19 @@ class Game(object):
         self._czar = 0
         self.question = None
         self.answers = {}
+        self.answer_order = {}
         self.deck = Deck()
         self.config = config.Config().data
         self.lang = self.config['language']
         self.channel = self.config['default_channel']
-        self.irc = cahirc.IRCBot(self.config['default_channel'],
-            self.config['my_nick'], self.config['server'])
+        self.irc = Cahirc(self)
         
     #-----------------------------------------------------------------
     # commands
     #-----------------------------------------------------------------
 
-    def start(self, player=None, throwaway=None):
+    def start(self, player:Player=None, args:List=None):
+        # args are not used in this function
         self.status = 'wait_players'
         if player is not None:
             self.add_player(player)
@@ -57,9 +59,12 @@ class Game(object):
             self.status = 'wait_czar'
             self.announce_answers()
 
-    def winner(self, player):
+    def winner(self, player:Player, answer_num):
         """ record the winner of the round """
-        player.record_win()
+        # player is the player who made the call; ignore
+        person = self.answer_order[answer_num]
+        person.record_win()
+        self.announce_winner(person)
         self.next_czar()
 
     def join(self, player, args):
@@ -95,7 +100,7 @@ class Game(object):
         q_text = re.sub('%s', '___', self.question.value)
         round_annc = self.config['text'][self.lang]['round_announcement']
         round_annc = round_annc.format(round_num=self.round_num, 
-            czar=self.czar.name)
+            czar=self.czar.nick)
         card_annc = self.config['text'][self.lang]['question_announcement']
         self.irc.say(self.channel, round_annc)
         self.irc.say(self.channel, card_annc.format(card=q_text))
@@ -111,6 +116,8 @@ class Game(object):
         os.chdir(currdir)
 
     def command(self, parser):
+        if parser.command is None:
+            return
         func = getattr(self, parser.command)
         func(parser.player, parser.args)
 
@@ -120,10 +127,17 @@ class Game(object):
                 card = self.deck.deal('Answer')
                 player.add_card(card)
 
+    def announce_winner(self, player:Player) -> None:
+        lang = self.config['language']
+        text = self.config['text'][lang]['winner_announcement']
+        text = text.format(player=player.nick, 
+            card=self.format_answer(self.answers[player]['cards']),
+            points=player.points)
+        self.irc.say(self.channel, text)
+
     def announce_answers(self):
         annc = self.config['text'][self.lang]['all_cards_played']
         self.irc.say(self.channel, annc)
-        # TODO: randomize answer order
         players = self.randomize_answers()
         for player in players:
             cards = self.answers[player]['cards']
@@ -134,8 +148,9 @@ class Game(object):
         text = re.sub('%s', '{}', self.question.value)
         answers = [card.value for card in cards]
         try:
-            text.format(*answers)
+            text = text.format(*answers)
         except IndexError as err:
+            print('incorrect number of cards supplied')
             print('cards: {}'.format(cards))
             print('question: {}'.format(self.question.value))
         return text
@@ -145,9 +160,13 @@ class Game(object):
         shuffle(players)
         i = 0
         for player in players:
+            self.answer_order[i] = player
             self.answers[player]['order'] = i
             i += 1
         return players
+
+    def receive_irc(self, source, nick, user, msg):
+        ''' receive some IRC goodness here'''
 
     def show_hands(self):
         for player in self.players:
@@ -160,7 +179,7 @@ class Game(object):
             for card in hand:
                 handstring += '[{}] {} '.format(i, card)
                 i += 1
-            self.irc.say(player.name, annc.format(cards=handstring))
+            self.irc.say(player.nick, annc.format(cards=handstring))
 
 
     #-----------------------------------------------------------------

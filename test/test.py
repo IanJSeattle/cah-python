@@ -4,6 +4,7 @@
 import unittest, sys, os, re
 from unittest.mock import MagicMock
 from unittest.mock import patch
+import irc.client
 
 sys.path.append('..')
 sys.path.append('.')
@@ -15,8 +16,9 @@ from player import Player
 import game as gameclass
 from cmdparser import CmdParser
 from exceptions import (NotPermitted, NoMoreCards)
+from cahirc import IRCmsg, fakeIRCmsg
 
-gameclass.cahirc.IRCBot.say = MagicMock()
+gameclass.cahirc.Cahirc.say = MagicMock()
 
 class CardTest(unittest.TestCase):
     def test_card(self):
@@ -154,16 +156,16 @@ class DeckTest(unittest.TestCase):
 
 class PlayerTest(unittest.TestCase):
     def test_create_player_works(self):
-        player = Player('Bob')
-        self.assertEqual('Bob', player.name)
+        player = Player('Bob', '~bobbo')
+        self.assertEqual('Bob', player.nick)
 
     def test_record_win_works(self):
-        player = Player('Bob')
+        player = Player('Bob', '~bobbo')
         player.record_win()
         self.assertEqual((1, 0, 0), player.get_score())
 
     def test_record_game_win_works(self):
-        player = Player('Bob')
+        player = Player('Bob', '~bobbo')
         player.record_win()
         player.game_win()
         self.assertEqual((0, 1, 1), player.get_score())
@@ -175,12 +177,12 @@ class PlayerTest(unittest.TestCase):
         cards.append(Card('Answer', 'Card 2'))
         cards.append(Card('Answer', 'Card 3'))
         deck = Deck(cards)
-        player = Player('Bob')
+        player = Player('Bob', '~bobbo')
         player.deck = deck
         self.assertEqual(deck.show_hand('Answer'), player.show_hand())
 
     def test_add_card_works(self):
-        player = Player('Bob')
+        player = Player('Bob', '~bobbo')
         player.add_card(Card('Answer', 'Card 0'))
         player.add_card(Card('Answer', 'Card 1'))
         self.assertEqual(['Card 0', 'Card 1'], player.show_hand())
@@ -192,7 +194,7 @@ class PlayerTest(unittest.TestCase):
         cards.append(Card('Answer', 'Card 2'))
         cards.append(Card('Answer', 'Card 3'))
         deck = Deck(cards)
-        player = Player('Bob')
+        player = Player('Bob', '~bobbo')
         player.deck = deck
         self.assertEqual(player.deal(1).value, cards[1].value)
 
@@ -218,9 +220,9 @@ class GameTest(unittest.TestCase):
     def test_commander_runs_play_command(self):
         game = gameclass.Game()
         p = CmdParser(game)
-        bob = Player('Bob')
-        jim = Player('Jim')
-        joe = Player('Joe')
+        bob = Player('Bob', '~bobbo')
+        jim = Player('Jim', '~jimbo')
+        joe = Player('Joe', '~joemg')
         game.start()
         game.add_player(bob)
         game.add_player(jim)
@@ -233,22 +235,22 @@ class GameTest(unittest.TestCase):
 class GamePlayerTest(unittest.TestCase):
     def test_adding_player_does(self):
         game = gameclass.Game()
-        bob = Player('Bob')
+        bob = Player('Bob', '~bobbo')
         game.add_player(bob)
         self.assertEqual([bob], game.players)
 
     def test_adding_dupe_player_is_ignored(self):
         game = gameclass.Game()
-        bob = Player('Bob')
+        bob = Player('Bob', '~bobbo')
         game.add_player(bob)
         game.add_player(bob)
         self.assertEqual([bob], game.players)
 
     def test_first_player_is_czar(self):
         game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
+        bob = Player('Bob', '~bobbo')
+        joe = Player('Joe', '~bobbo')
+        jim = Player('Jim', '~bobbo')
         game.add_player(bob)
         game.add_player(joe)
         game.add_player(jim)
@@ -256,8 +258,8 @@ class GamePlayerTest(unittest.TestCase):
 
     def test_next_czar_works(self):
         game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
+        bob = Player('Bob', '~bobbo')
+        joe = Player('Joe', '~bobbo')
         game.add_player(bob)
         game.add_player(joe)
         self.assertEqual(joe, game.next_czar())
@@ -265,9 +267,9 @@ class GamePlayerTest(unittest.TestCase):
 
     def test_next_czar_loops(self):
         game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
+        bob = Player('Bob', '~bobbo')
+        joe = Player('Joe', '~bobbo')
+        jim = Player('Jim', '~bobbo')
         game.add_player(bob)
         game.add_player(joe)
         game.add_player(jim)
@@ -279,9 +281,9 @@ class GamePlayerTest(unittest.TestCase):
 class PlayTest(unittest.TestCase):
     def test_game_serves_question_card(self):
         game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
+        bob = Player('Bob', '~bobbo')
+        joe = Player('Joe', '~bobbo')
+        jim = Player('Jim', '~bobbo')
         game.start()
         game.add_player(bob)
         game.add_player(joe)
@@ -291,9 +293,9 @@ class PlayTest(unittest.TestCase):
 
     def test_game_deals_to_players(self):
         game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
+        bob = Player('Bob', '~bobbo')
+        joe = Player('Joe', '~bobbo')
+        jim = Player('Jim', '~bobbo')
         game.start()
         game.add_player(bob)
         game.add_player(joe)
@@ -304,9 +306,9 @@ class PlayTest(unittest.TestCase):
 
     def test_czar_answer_not_accepted(self):
         game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
+        bob = Player('Bob', '~bobbo')
+        joe = Player('Joe', '~bobbo')
+        jim = Player('Jim', '~bobbo')
         game.start()
         game.add_player(bob)
         game.add_player(joe)
@@ -316,9 +318,9 @@ class PlayTest(unittest.TestCase):
 
     def test_other_answers_accepted(self):
         game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
+        bob = Player('Bob', '~bobbo')
+        joe = Player('Joe', '~bobbo')
+        jim = Player('Jim', '~bobbo')
         game.start()
         game.add_player(bob)
         game.add_player(joe)
@@ -331,9 +333,9 @@ class PlayTest(unittest.TestCase):
         
     def test_multiple_plays_not_allowed(self):
         game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
+        bob = Player('Bob', '~bobbo')
+        joe = Player('Joe', '~bobbo')
+        jim = Player('Jim', '~bobbo')
         game.start()
         game.add_player(bob)
         game.add_player(joe)
@@ -344,9 +346,9 @@ class PlayTest(unittest.TestCase):
 
     def test_correct_status_once_all_played(self):
         game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
+        bob = Player('Bob', '~bobbo')
+        joe = Player('Joe', '~bobbo')
+        jim = Player('Jim', '~bobbo')
         game.start()
         game.add_player(bob)
         game.add_player(joe)
@@ -357,9 +359,9 @@ class PlayTest(unittest.TestCase):
 
     def test_post_complete_plays_fail(self):
         game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
+        bob = Player('Bob', '~bobbo')
+        joe = Player('Joe', '~bobbo')
+        jim = Player('Jim', '~bobbo')
         game.start()
         game.add_player(bob)
         game.add_player(joe)
@@ -371,30 +373,30 @@ class PlayTest(unittest.TestCase):
 
     def test_selcting_answer_ups_score(self):
         game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
+        bob = Player('Bob', '~bobbo')
+        joe = Player('Joe', '~bobbo')
+        jim = Player('Jim', '~bobbo')
         game.start()
         game.add_player(bob)
         game.add_player(joe)
         game.add_player(jim)
         game.play(jim, jim.deal(2))
         game.play(joe, joe.deal(1))
-        game.winner(joe)
-        self.assertEqual(1, joe.game_wins)
+        game.winner(bob, 0)
+        self.assertEqual(1, game.answer_order[0].points)
         
     def test_selecting_answer_moves_czar(self):
         game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
+        bob = Player('Bob', '~bobbo')
+        joe = Player('Joe', '~bobbo')
+        jim = Player('Jim', '~bobbo')
         game.start()
         game.add_player(bob)
         game.add_player(joe)
         game.add_player(jim)
         game.play(jim, jim.deal(2))
         game.play(joe, joe.deal(1))
-        game.winner(jim)
+        game.winner(bob, 0)
         self.assertEqual(joe, game.czar)
 
 
@@ -474,9 +476,9 @@ class ParserTest(unittest.TestCase):
         self.assertEqual('score', self.p.command)
 
     def test_dealing_a_card_works(self):
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
+        bob = Player('Bob', '~bobbo')
+        joe = Player('Joe', '~bobbo')
+        jim = Player('Jim', '~bobbo')
         self.game.start()
         self.game.add_player(bob)
         self.game.add_player(joe)
@@ -488,9 +490,9 @@ class ParserTest(unittest.TestCase):
         self.assertEqual([jimcard], self.game.answers[jim]['cards'])
 
     def test_dealing_inorder_cards_works(self):
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
+        bob = Player('Bob', '~bobbo')
+        joe = Player('Joe', '~bobbo')
+        jim = Player('Jim', '~bobbo')
         self.game.start()
         self.game.add_player(bob)
         self.game.add_player(joe)
@@ -502,9 +504,9 @@ class ParserTest(unittest.TestCase):
         self.assertEqual(jimcards, self.game.answers[jim]['cards'])
 
     def test_dealing_wackorder_cards_works(self):
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
+        bob = Player('Bob', '~bobbo')
+        joe = Player('Joe', '~bobbo')
+        jim = Player('Jim', '~bobbo')
         self.game.start()
         self.game.add_player(bob)
         self.game.add_player(joe)
@@ -529,26 +531,50 @@ class ConfigTest(unittest.TestCase):
         self.assertEqual('cards', config.data['carddir'])
 
 
+class BasicIRCTest(unittest.TestCase):
+    def test_irc_msg_obj(self):
+        game = gameclass.Game()
+        bob = Player('Bob', '~bobbo')
+        game.add_player(bob)
+        msg = fakeIRCmsg(game, 'hello')
+        self.assertEqual(msg.nick, 'Bob')
+        self.assertEqual(msg.user, '~bobbo')
+        self.assertEqual(msg.msg, 'hello')
+        self.assertEqual(msg.source, 'privmsg')
+        self.assertEqual(msg.get_player(), bob)
+
+    def test_game_creates_player_from_irc(self):
+        expected_player = Player('Bob', '~bobbo')
+        game = gameclass.Game()
+        msg = fakeIRCmsg(game, 'start') # Bob is the default user
+        p = CmdParser(game)
+        #p.parse(msg)
+        #self.assertEqual(game.players, [expected_player])
+
+        # TODO this test above breaks p.parse().  have to go through and
+        # update all the parse() calls to take an IRCmsg now.  sigh.
+
+
 class GameIRCTest(unittest.TestCase):
     def setUp(self):
-        gameclass.cahirc.IRCBot.say.reset_mock()
+        gameclass.cahirc.Cahirc.say.reset_mock()
 
     def test_game_start_says_game_start(self):
         config = Config()
         chan = config.data['default_channel']
         text = config.data['text']['en']['round_start']
         game = gameclass.Game()
-        bob = Player('Bob')
+        bob = Player('Bob', '~bobbo')
         p = CmdParser(game)
         p.parse('start', bob)
         game.command(p)
-        gameclass.cahirc.IRCBot.say.assert_called_with(chan, text)
+        gameclass.cahirc.Cahirc.say.assert_called_with(chan, text)
 
     def test_game_start_joining_works(self):
         game = gameclass.Game()
         # a person who says something on the channel is registered as a
         # Player for this exact situation
-        bob = Player('Bob')
+        bob = Player('Bob', '~bobbo')
         p = CmdParser(game)
         p.parse('start', bob)
         game.command(p)
@@ -556,27 +582,27 @@ class GameIRCTest(unittest.TestCase):
 
     def test_game_join_joining_works(self):
         game = gameclass.Game()
-        bob = Player('Bob')
+        bob = Player('Bob', '~bobbo')
         p = CmdParser(game)
         p.parse('start', bob)
         game.command(p)
-        jim = Player('Jim')
-        p.parse('join')
+        jim = Player('Jim', '~bobbo')
         p.player = jim
+        p.parse('join')
         game.command(p)
         self.assertEqual([bob, jim], game.players)
 
     def test_game_three_join_starts(self):
         game = gameclass.Game()
-        bob = Player('Bob')
+        bob = Player('Bob', '~bobbo')
         p = CmdParser(game)
         p.parse('start', bob)
         game.command(p)
-        jim = Player('Jim')
+        jim = Player('Jim', '~bobbo')
         p.parse('join')
         p.player = jim
         game.command(p)
-        joe = Player('Joe')
+        joe = Player('Joe', '~bobbo')
         p.parse('join')
         p.player = joe
         game.command(p)
@@ -584,15 +610,15 @@ class GameIRCTest(unittest.TestCase):
 
     def test_game_three_join_starts(self):
         game = gameclass.Game()
-        bob = Player('Bob')
+        bob = Player('Bob', '~bobbo')
         p = CmdParser(game)
         p.parse('start', bob)
         game.command(p)
-        jim = Player('Jim')
+        jim = Player('Jim', '~bobbo')
         p.parse('join')
         p.player = jim
         game.command(p)
-        joe = Player('Joe')
+        joe = Player('Joe', '~bobbo')
         p.parse('join', joe)
         game.command(p)
         self.assertEqual(10, len(joe.show_hand()))
@@ -601,35 +627,37 @@ class GameIRCTest(unittest.TestCase):
         config = Config().data
         chan = config['default_channel']
         game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
+        bob = Player('Bob', '~bobbo')
+        joe = Player('Joe', '~bobbo')
+        jim = Player('Jim', '~bobbo')
         game.start()
         game.add_player(bob)
         game.add_player(joe)
         game.add_player(jim)
         self.assertTrue(re.search('Card: ', 
-            str(gameclass.cahirc.IRCBot.say.mock_calls[2])))
+            str(gameclass.cahirc.Cahirc.say.mock_calls[2])))
 
     def test_joe_gets_cards(self):
+        gameclass.cahirc.Cahirc.say.reset_mock()
         config = Config().data
         game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
+        bob = Player('Bob', '~bobbo')
+        joe = Player('Joe', '~bobbo')
+        jim = Player('Jim', '~bobbo')
         game.start()
         game.add_player(bob)
         game.add_player(joe)
         game.add_player(jim)
         self.assertTrue(re.search('Your cards are: ', 
-            str(gameclass.cahirc.IRCBot.say.mock_calls[3])))
+            str(gameclass.cahirc.Cahirc.say.mock_calls[3])))
 
     def test_candidates_are_announced(self):
+        gameclass.cahirc.Cahirc.say.reset_mock()
         config = Config().data
         game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
+        bob = Player('Bob', '~bobbo')
+        joe = Player('Joe', '~bobbo')
+        jim = Player('Jim', '~bobbo')
         game.start()
         game.add_player(bob)
         game.add_player(joe)
@@ -638,36 +666,76 @@ class GameIRCTest(unittest.TestCase):
         game.play(jim, jim.deal(1))
         played_annc = config['text']['en']['all_cards_played']
         self.assertTrue(re.search(played_annc,
-            str(gameclass.cahirc.IRCBot.say.mock_calls[5])))
+            str(gameclass.cahirc.Cahirc.say.mock_calls[5])))
+
+    def test_irc_game(self):
+        gameclass.cahirc.Cahirc.say.reset_mock()
+        game = gameclass.Game()
+        p = CmdParser(game)
+        #p.parse()
+
+        
 
 
 class ResponseTest(unittest.TestCase):
     def test_round_num_displays(self):
+        gameclass.cahirc.Cahirc.say.reset_mock()
         game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
+        bob = Player('Bob', '~bobbo')
+        joe = Player('Joe', '~bobbo')
+        jim = Player('Jim', '~bobbo')
         game.start()
         game.add_player(bob)
         game.add_player(joe)
         game.add_player(jim)
         self.assertTrue(re.search("Round 1!",
-            str(gameclass.cahirc.IRCBot.say.mock_calls[1])))
+            str(gameclass.cahirc.Cahirc.say.mock_calls[1])))
         self.assertTrue(re.search("Bob is the card czar",
-            str(gameclass.cahirc.IRCBot.say.mock_calls[1])))
+            str(gameclass.cahirc.Cahirc.say.mock_calls[1])))
 
     def test_answers_are_displayed(self):
+        gameclass.cahirc.Cahirc.say.reset_mock()
         game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
+        answer_card = Card('Answer', 'TEST')
+        question_card= Card('Question', '%s is TEST')
+        bob = Player('Bob', '~bobbo')
+        joe = Player('Joe', '~bobbo')
+        jim = Player('Jim', '~bobbo')
         game.start()
         game.add_player(bob)
         game.add_player(joe)
         game.add_player(jim)
-        question = game.question
-        game.play(joe, joe.deal(1))
-        game.play(jim, jim.deal(1))
+        game.question = question_card
+        expected_answer = 'TEST is TEST'
+        game.play(joe, answer_card)
+        game.play(jim, answer_card)
+        self.assertEqual(f"call('\\\\#test', '{expected_answer}')",
+            str(gameclass.cahirc.Cahirc.say.mock_calls[-1]))
+
+    def test_winner_is_announced(self):
+        config = Config().data
+        text = config['text']['en']['winner_announcement']
+        gameclass.cahirc.Cahirc.say.reset_mock()
+        game = gameclass.Game()
+        bob = Player('Bob', '~bobbo')
+        joe = Player('Joe', '~bobbo')
+        jim = Player('Jim', '~bobbo')
+        game.start()
+        game.add_player(bob)
+        game.add_player(joe)
+        game.add_player(jim)
+        game.question = Card('Question', '%s is TEST')
+        game.play(joe, Card('Answer', 'JOE'))
+        game.play(jim, Card('Answer', 'JIM'))
+        # winner() takes a player as an argument, because all commands
+        # do.  that player is discarded, though, since the winner
+        # command only really cares about the choice number.
+        game.winner(bob, 0) 
+        winner = game.answer_order[0]
+        expected_answer = text.format(player=winner.nick,
+            card=f'{winner.nick.upper()} is TEST', points=1)
+        self.assertEqual(f"call('\\\\#test', '{expected_answer}')",
+            str(gameclass.cahirc.Cahirc.say.mock_calls[-1]))
 
 
 if __name__ == '__main__':
