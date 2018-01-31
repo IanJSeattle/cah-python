@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# vi:set expandtab ai:
+# vi:set expandtab ai wm=0:
 
 import unittest, sys, os, re
 from unittest.mock import MagicMock
@@ -212,10 +212,9 @@ class GameTest(unittest.TestCase):
 
     def test_commander_runs_start_command(self):
         game = gameclass.Game()
-        msg = fakeIRCmsg(game, 'start')
+        msg = fakeIRCmsg('start') # bob is the default player
         p = CmdParser(game)
-        #p.parse(msg)
-        p.parse('start')
+        p.parse(msg)
         game.command(p)
         self.assertEqual('wait_players', game.status)
 
@@ -225,13 +224,12 @@ class GameTest(unittest.TestCase):
         bob = Player('Bob', '~bobbo')
         jim = Player('Jim', '~jimbo')
         joe = Player('Joe', '~joemg')
-        msg = fakeIRCmsg(game, 'play 1', user=jim)
+        msg = fakeIRCmsg('play 1', user=jim)
         game.start()
         game.add_player(bob)
         game.add_player(jim)
         game.add_player(joe)
-        #p.parse(msg)
-        p.parse('play 1', jim)
+        p.parse(msg)
         game.command(p)
         self.assertEqual(9, len(jim.show_hand()))
 
@@ -280,6 +278,17 @@ class GamePlayerTest(unittest.TestCase):
         self.assertEqual(joe, game.next_czar())
         self.assertEqual(jim, game.next_czar())
         self.assertEqual(bob, game.next_czar())
+
+    def test_player_starts_and_is_registered(self):
+        game = gameclass.Game()
+        bob = Player('Bob', '~bobbo')
+        msg = fakeIRCmsg('start')
+        p = CmdParser(game)
+        p.parse(msg)
+        self.assertEqual(str(bob), str(game.players[0]))
+
+    # TODO: test that a player trying to join who's already joined gets
+    # some kind of error message
 
 
 class PlayTest(unittest.TestCase):
@@ -410,13 +419,16 @@ class ParserTest(unittest.TestCase):
         self.p = CmdParser(self.game)
 
     def test_basic_command_works(self):
+        game = gameclass.Game()
         cmdstring = 'start'
-        self.p.parse(cmdstring)
+        msg = fakeIRCmsg(cmdstring)
+        self.p.parse(msg)
         self.assertEqual(cmdstring, self.p.command)
 
     def test_one_argument_command_works(self):
         cmdstring = 'winner 1'
-        self.p.parse(cmdstring)
+        msg = fakeIRCmsg(cmdstring)
+        self.p.parse(msg)
         self.assertEqual('winner', self.p.command)
         self.assertEqual([1], self.p.args)
 
@@ -428,55 +440,70 @@ class ParserTest(unittest.TestCase):
     # real life, but the numbers version is handy for testing.
 
     def test_multi_argument_command(self):
+        bob = Player('Bob', '~bobbo')
+        self.game.add_player(bob)
+        self.game.load_cards()
+        self.game.deck.shuffle()
+        self.game.deal_all_players(10)
         cmdstring = 'play 3 4 5'
-        self.p.parse(cmdstring)
+        msg = fakeIRCmsg(cmdstring, user=bob)
+        self.p.parse(msg)
         self.assertEqual('play', self.p.command)
-        self.assertEqual([3, 4, 5], self.p.args)
+        #self.assertEqual([3, 4, 5], self.p.args)
+        self.assertEqual(3, len(self.p.args))
+        self.assertEqual([str, str, str], [type(i) for i in self.p.args])
 
     def test_one_arg_with_garbage(self):
         cmdstring = 'winner 1 because we rock'
-        self.p.parse(cmdstring)
+        msg = fakeIRCmsg(cmdstring)
+        self.p.parse(msg)
         self.assertEqual('winner', self.p.command)
         self.assertEqual([1], self.p.args)
 
     def test_multi_arg_with_garbage(self):
         cmdstring = 'play 1 2 3 because ew'
-        self.p.parse(cmdstring)
+        msg = fakeIRCmsg(cmdstring)
+        self.p.parse(msg)
         self.assertEqual('play', self.p.command)
         self.assertEqual([1, 2, 3], self.p.args)
 
     def test_random_string(self):
         cmdstring = 'why is the sky blue?'
-        self.p.parse(cmdstring)
+        msg = fakeIRCmsg(cmdstring)
+        self.p.parse(msg)
         self.assertEqual(None, self.p.command)
         self.assertEqual([], self.p.args)
 
     def test_cmd_no_args(self):
         cmdstring = 'pick yourself up'
-        self.p.parse(cmdstring)
+        msg = fakeIRCmsg(cmdstring)
+        self.p.parse(msg)
         self.assertEqual(None, self.p.command)
         self.assertEqual([], self.p.args)
 
     def test_pick_works_as_play(self):
         self.game.status = 'wait_answers'
         cmdstring = 'pick 1'
-        self.p.parse(cmdstring)
+        msg = fakeIRCmsg(cmdstring)
+        self.p.parse(msg)
         self.assertEqual('play', self.p.command)
         self.assertEqual([1], self.p.args)
 
     def test_pick_works_as_winner(self):
         self.game.status = 'wait_czar'
         cmdstring = 'pick 1'
-        self.p.parse(cmdstring)
+        msg = fakeIRCmsg(cmdstring)
+        self.p.parse(msg)
         self.assertEqual('winner', self.p.command)
         self.assertEqual([1], self.p.args)
 
     def test_shame_works_as_score(self):
         cmdstring = 'shame'
-        self.p.parse(cmdstring)
+        msg = fakeIRCmsg(cmdstring)
+        self.p.parse(msg)
         self.assertEqual('score', self.p.command)
         self.game.status = 'wait_czar'
-        self.p.parse(cmdstring)
+        self.p.parse(msg)
         self.assertEqual('score', self.p.command)
 
     def test_dealing_a_card_works(self):
@@ -489,7 +516,8 @@ class ParserTest(unittest.TestCase):
         self.game.add_player(jim)
         jimcard = jim.show_hand()[1]
         cmdstring = 'play 1'
-        self.p.parse(cmdstring, jim)
+        msg = fakeIRCmsg(cmdstring, user=jim)
+        self.p.parse(msg)
         self.game.command(self.p)
         self.assertEqual([jimcard], self.game.answers[jim]['cards'])
 
@@ -503,7 +531,8 @@ class ParserTest(unittest.TestCase):
         self.game.add_player(jim)
         jimcards = jim.show_hand()[1:4]
         cmdstring = 'play 1 2 3'
-        self.p.parse(cmdstring, jim)
+        msg = fakeIRCmsg(cmdstring, user=jim)
+        self.p.parse(msg)
         self.game.command(self.p)
         self.assertEqual(jimcards, self.game.answers[jim]['cards'])
 
@@ -520,7 +549,8 @@ class ParserTest(unittest.TestCase):
         jimcards.append(jim.show_hand()[1])
         jimcards.append(jim.show_hand()[7])
         cmdstring = 'play 3 1 7'
-        self.p.parse(cmdstring, jim)
+        msg = fakeIRCmsg(cmdstring, user=jim)
+        self.p.parse(msg)
         self.game.command(self.p)
         self.assertEqual(jimcards, self.game.answers[jim]['cards'])
 
@@ -540,23 +570,19 @@ class BasicIRCTest(unittest.TestCase):
         game = gameclass.Game()
         bob = Player('Bob', '~bobbo')
         game.add_player(bob)
-        msg = fakeIRCmsg(game, 'hello')
+        msg = fakeIRCmsg('hello')
         self.assertEqual(msg.nick, 'Bob')
         self.assertEqual(msg.user, '~bobbo')
         self.assertEqual(msg.msg, 'hello')
         self.assertEqual(msg.source, 'privmsg')
-        self.assertEqual(msg.get_player(), bob)
 
     def test_game_creates_player_from_irc(self):
         expected_player = Player('Bob', '~bobbo')
         game = gameclass.Game()
-        msg = fakeIRCmsg(game, 'start') # Bob is the default user
+        msg = fakeIRCmsg('start') # Bob is the default user
         p = CmdParser(game)
-        #p.parse(msg)
-        #self.assertEqual(game.players, [expected_player])
-
-        # TODO this test above breaks p.parse().  have to go through and
-        # update all the parse() calls to take an IRCmsg now.  sigh.
+        p.parse(msg)
+        self.assertEqual(str(game.players[0]), str(expected_player))
 
 
 class GameIRCTest(unittest.TestCase):
@@ -570,7 +596,8 @@ class GameIRCTest(unittest.TestCase):
         game = gameclass.Game()
         bob = Player('Bob', '~bobbo')
         p = CmdParser(game)
-        p.parse('start', bob)
+        msg = fakeIRCmsg('start')
+        p.parse(msg)
         game.command(p)
         gameclass.cahirc.Cahirc.say.assert_called_with(chan, text)
 
@@ -580,34 +607,39 @@ class GameIRCTest(unittest.TestCase):
         # Player for this exact situation
         bob = Player('Bob', '~bobbo')
         p = CmdParser(game)
-        p.parse('start', bob)
+        msg = fakeIRCmsg('start')
+        p.parse(msg)
         game.command(p)
-        self.assertEqual([bob], game.players)
+        self.assertEqual(str(bob), str(game.players[0]))
 
     def test_game_join_joining_works(self):
         game = gameclass.Game()
         bob = Player('Bob', '~bobbo')
         p = CmdParser(game)
-        p.parse('start', bob)
+        msg = fakeIRCmsg('start')
+        p.parse(msg)
         game.command(p)
         jim = Player('Jim', '~bobbo')
-        p.parse('join', jim)
+        msg = fakeIRCmsg('join', user=jim)
+        p.parse(msg)
         game.command(p)
-        self.assertEqual([bob, jim], game.players)
+        self.assertEqual([str(bob), str(jim)], [str(p) for p in game.players])
 
     def test_game_three_join_starts(self):
         game = gameclass.Game()
         bob = Player('Bob', '~bobbo')
         p = CmdParser(game)
-        p.parse('start', bob)
+        msg = fakeIRCmsg('start')
+        p.parse(msg)
         game.command(p)
         jim = Player('Jim', '~bobbo')
-        p.parse('join')
+        msg = fakeIRCmsg('join', user=jim)
+        p.parse(msg)
         p.player = jim
         game.command(p)
         joe = Player('Joe', '~bobbo')
-        p.parse('join')
-        p.player = joe
+        msg = fakeIRCmsg('join', user=joe)
+        p.parse(msg)
         game.command(p)
         self.assertEqual('wait_answers', game.status)
 
@@ -615,16 +647,20 @@ class GameIRCTest(unittest.TestCase):
         game = gameclass.Game()
         bob = Player('Bob', '~bobbo')
         p = CmdParser(game)
-        p.parse('start', bob)
+        msg = fakeIRCmsg('start')
+        p.parse(msg)
         game.command(p)
-        jim = Player('Jim', '~bobbo')
-        p.parse('join')
-        p.player = jim
+        jim = Player('Jim', '~jimbo')
+        msg = fakeIRCmsg('join', user=jim)
+        p.parse(msg)
         game.command(p)
-        joe = Player('Joe', '~bobbo')
-        p.parse('join', joe)
+        joe = Player('Joe', '~joebo')
+        msg = fakeIRCmsg('join', user=joe)
+        p.parse(msg)
         game.command(p)
-        self.assertEqual(10, len(joe.show_hand()))
+        self.assertEqual(10, len(game.players[0].show_hand()))
+        self.assertEqual(10, len(game.players[1].show_hand()))
+        self.assertEqual(10, len(game.players[2].show_hand()))
 
     def test_first_question_displays(self):
         config = Config().data

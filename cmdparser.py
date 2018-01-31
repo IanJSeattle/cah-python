@@ -5,28 +5,34 @@ from collections import namedtuple
 from typing import List
 from game import Game
 from player import Player
+from cahirc import IRCmsg
 
 
 class CmdParser(object):
     """ this class represents the command parsing structure for the
     game. """
 
-    def __init__(self, game: Game):
-        self.Args = namedtuple('Args', 'hasargs required cardargs')
-        self.cmdargs = { 'pick': self.Args(True, True, False),
-                     'play': self.Args(True, True, True),
-                     'winner': self.Args(True, True, False),
-                     'start': self.Args(True, False, False),
-                     'status': self.Args(False, False, False),
-                     'score': self.Args(False, False, False),
-                     'shame': self.Args(False, False, False),
-                     'cards': self.Args(False, False, False),
-                     'join': self.Args(False, False, False)}
+    def __init__(self, game: Game) -> None:
+        # hasargs: command can take arguments
+        # required: arguments are required, and a cmd without args will
+        # be discarded
+        # cardargs: arguments are cards
+        # anon: command can be invoked even if not registered in the game
+        Attrs = namedtuple('Attrs', 'hasargs required cardargs anon')
+        self.cmdattrs = { 'pick': Attrs(True, True, False, False),
+                     'play': Attrs(True, True, True, False),
+                     'winner': Attrs(True, True, False, False),
+                     'start': Attrs(True, False, False, True),
+                     'status': Attrs(False, False, False, False),
+                     'score': Attrs(False, False, False, False),
+                     'shame': Attrs(False, False, False, False),
+                     'cards': Attrs(False, False, False, False),
+                     'join': Attrs(False, False, False, True)}
 
-        self.Cmdalias = namedtuple('Cmdalias', 'alias command state')
-        self.aliases = [ self.Cmdalias('pick', 'play', 'wait_answers'),
-                         self.Cmdalias('pick', 'winner', 'wait_czar'),
-                         self.Cmdalias('shame', 'score', 'any') ]
+        Cmdalias = namedtuple('Cmdalias', 'alias command state')
+        self.aliases = [ Cmdalias('pick', 'play', 'wait_answers'),
+                         Cmdalias('pick', 'winner', 'wait_czar'),
+                         Cmdalias('shame', 'score', 'any') ]
 
         # the maximum number of arguments any command can take
         self.max_args = 3
@@ -39,7 +45,7 @@ class CmdParser(object):
         self.command = None
 
     def is_command(self) -> bool:
-        if self.words[0] in self.cmdargs:
+        if self.words[0] in self.cmdattrs:
             return True
         return False
 
@@ -50,22 +56,29 @@ class CmdParser(object):
             if re.search('^\d$', self.words[i]):
                 self.args.append(int(self.words[i]))
 
-    def parse(self, string:str=None, player:Player=None) -> None:
-    #def parse(self, msg:IRCmsg=None) -> None:
-        self.player = player
-        if string is not None:
-            self.string = string
+    def parse(self, msg: IRCmsg=None) -> None:
+        if msg.msg is not None:
+            self.string = msg.msg
         if not self.is_command():
             self.command = None
             return
         self.command = self.get_alias()
-        if self.cmdargs[self.command]:
+        if self.cmdattrs[self.command]:
+            if self.cmdattrs[self.command].anon:
+                self.register_player(msg)
+            self.player = self.game.get_player(msg.nick)
             self.get_args()
-            if self.args == [] and self.cmdargs[self.command].required:
+            if self.args == [] and self.cmdattrs[self.command].required:
                 self.command = None
                 return
-        if self.player is not None and self.cmdargs[self.command].cardargs == True:
-            self.deal_cards()
+        if self.player is not None and self.cmdattrs[self.command].cardargs == True:
+            self.play_cards()
+
+    def register_player(self, msg):
+        nick = msg.nick
+        user = msg.user
+        if not self.game.get_player(nick):
+            self.game.add_player(Player(nick, user))
 
     def get_alias(self) -> str:
         for alias in self.aliases:
@@ -74,17 +87,21 @@ class CmdParser(object):
                 return alias.command
         return self.words[0]
 
-    def deal_cards(self) -> None:
+    def play_cards(self) -> None:
         cardargs = []
         nums = []
-        # this seemed easier than doing math to track cards as they're
-        # dealt
+        # grab card info from the player's hand
         for arg in self.args:
             nums.append(arg)
-            card = self.player.show_hand()[arg]
+            try:
+                card = self.player.show_hand()[arg]
+            except IndexError:
+                pass
+                #import pdb; pdb.set_trace()
             cardargs.append(card)
+        # "deal" the cards out to the parser
         self.args = cardargs
-        # now discard those cards from player's hand
+        # now remove those cards from player's hand
         for num in nums:
             self.player.deal(num)
 

@@ -84,6 +84,12 @@ class Game(object):
         if players >= min_players and self.status == 'wait_players':
             self.commence()
 
+    def get_player(self, nick: str) -> Player:
+        for player in self.players:
+            if player.nick == nick:
+                return player
+        return None
+
     def next_czar(self):
         self._czar += 1
         self._czar %= len(self.players)
