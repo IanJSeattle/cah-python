@@ -44,24 +44,17 @@ class Cahirc(irc.bot.SingleServerIRCBot):
 
 
 class IRCmsg(object):
-    def __init__(self, game, event):
+    def __init__(self, event):
         self.nick = event.source.nick
         self.user = event.source.user
         self.msg = event.arguments[0]
         self.source = event.type
-        self.game = game
-
-    def get_player(self):
-        for player in self.game.players:
-            if player.nick == self.nick:
-                return player
-        return None
 
 
 class fakeIRCmsg(IRCmsg):
-    def __init__(self, game, string, user='Bob!~bobbo@127.0.0.1'):
+    def __init__(self, string, user='Bob!~bobbo@127.0.0.1'):
         if isinstance(user, Player):
             user = '{}!{}@127.0.0.1'.format(user.nick, user.user)
         nm = NickMask(user)
         event = Event('privmsg', nm, '#test', [string])
-        super().__init__(game, event)
+        super().__init__(event)
