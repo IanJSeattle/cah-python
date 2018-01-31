@@ -51,8 +51,8 @@ class CmdParser(object):
                 self.args.append(int(self.words[i]))
 
     def parse(self, string:str=None, player:Player=None) -> None:
-        if player is not None:
-            self.player = player
+    #def parse(self, msg:IRCmsg=None) -> None:
+        self.player = player
         if string is not None:
             self.string = string
         if not self.is_command():

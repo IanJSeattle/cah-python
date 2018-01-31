@@ -9,6 +9,7 @@ import irc.bot
 import irc.strings
 from irc.client import ip_numstr_to_quad, ip_quad_to_numstr, Event, NickMask
 from config import Config
+from player import Player
 
 class Cahirc(irc.bot.SingleServerIRCBot):
     def __init__(self, game):
@@ -59,6 +60,8 @@ class IRCmsg(object):
 
 class fakeIRCmsg(IRCmsg):
     def __init__(self, game, string, user='Bob!~bobbo@127.0.0.1'):
+        if isinstance(user, Player):
+            user = '{}!{}@127.0.0.1'.format(user.nick, user.user)
         nm = NickMask(user)
         event = Event('privmsg', nm, '#test', [string])
         super().__init__(game, event)
