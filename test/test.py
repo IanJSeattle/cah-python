@@ -212,7 +212,9 @@ class GameTest(unittest.TestCase):
 
     def test_commander_runs_start_command(self):
         game = gameclass.Game()
-        p = CmdParser( game)
+        msg = fakeIRCmsg(game, 'start')
+        p = CmdParser(game)
+        #p.parse(msg)
         p.parse('start')
         game.command(p)
         self.assertEqual('wait_players', game.status)
@@ -223,10 +225,12 @@ class GameTest(unittest.TestCase):
         bob = Player('Bob', '~bobbo')
         jim = Player('Jim', '~jimbo')
         joe = Player('Joe', '~joemg')
+        msg = fakeIRCmsg(game, 'play 1', user=jim)
         game.start()
         game.add_player(bob)
         game.add_player(jim)
         game.add_player(joe)
+        #p.parse(msg)
         p.parse('play 1', jim)
         game.command(p)
         self.assertEqual(9, len(jim.show_hand()))
@@ -587,8 +591,7 @@ class GameIRCTest(unittest.TestCase):
         p.parse('start', bob)
         game.command(p)
         jim = Player('Jim', '~bobbo')
-        p.player = jim
-        p.parse('join')
+        p.parse('join', jim)
         game.command(p)
         self.assertEqual([bob, jim], game.players)
 
