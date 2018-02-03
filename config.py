@@ -1,15 +1,16 @@
 # vi: set expandtab ai:
 
-import yaml, os
+import os
+import yaml
 
 class Config(object):
     """ instantiating this class reads in all the config files """
 
     # the fields which are allowed in the config file
-    _fields = ['carddir', 'default_channel', 'my_nick', 'server', 'port', 
+    _fields = ['carddir', 'default_channel', 'my_nick', 'server', 'port',
         'turns', 'min_players', 'max_players', 'text', 'language',
         'hand_size']
-        
+
     def __init__(self):
         self.path = ['.', '..'] # the last config.yaml found will win
         self.data = {}
@@ -33,7 +34,7 @@ class Config(object):
     def check_config(self):
         for name in self.data:
             if name not in self._fields:
-                raise(ValueError('{} is not a known config field'.format(name)))
+                raise ValueError('{} is not a known config field'.format(name))
 
     def refresh(self):
         self.read_files()

@@ -1,8 +1,8 @@
 # vi: set expandtab ai:
 
 from random import shuffle
-from card import Card
 import json
+from card import Card
 from exceptions import NoMoreCards
 
 class Deck(object):
@@ -31,13 +31,13 @@ class Deck(object):
         """ return one Card from the Deck, removing it from available
         cards, and putting it in the appropriate dealt card stack. """
         if cardtype == 'Answer':
-            if num == None:
+            if num is None:
                 card = self.answercards.pop()
             else:
                 card = self.answercards.pop(num)
             self.dealt_answers.append(card)
         else:
-            if num == None:
+            if num is None:
                 try:
                     card = self.questioncards.pop()
                 except IndexError:
@@ -48,9 +48,9 @@ class Deck(object):
         return card
 
     def shuffle(self):
-       """ shuffle all the Cards in the Deck """
-       shuffle(self.answercards) 
-       shuffle(self.questioncards) 
+        """ shuffle all the Cards in the Deck """
+        shuffle(self.answercards)
+        shuffle(self.questioncards)
 
     def __len__(self):
         """ special function for length,  """
@@ -66,7 +66,7 @@ class Deck(object):
                 newcard.draw = tmpcard['draw']
                 newcard.source = tmpcard['source']
                 self.add(newcard)
-    
+
     def show_hand(self, cardtype):
         if cardtype == 'Answer':
             return [card.value for card in self.answercards]

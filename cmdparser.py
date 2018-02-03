@@ -39,10 +39,10 @@ class CmdParser(object):
         self.game = game
         self.ircmsg = None
         self._string = None
-        self.player = None
-        self.words = []
-        self.args = []
-        self.command = None
+        self.player: Player = None
+        self.words: List[str] = []
+        self.args: List[int] = []
+        self.command: str = None
 
     def is_command(self) -> bool:
         if self.words[0] in self.cmdattrs:
@@ -67,7 +67,7 @@ class CmdParser(object):
             self.player = self.game.get_player(msg.nick)
             registered = True
             if self.player == None:
-                self.player = Player(msg.nick, msg.user)
+                self.player = msg.make_player()
                 registered = False
             self.get_args()
             if self.args == [] and self.cmdattrs[self.command].required:
@@ -78,7 +78,7 @@ class CmdParser(object):
 
     def get_alias(self) -> str:
         for alias in self.aliases:
-            if self.words[0] == alias.alias and (self.game.status == 
+            if self.words[0] == alias.alias and (self.game.status ==
                 alias.state or alias.state == 'any'):
                 return alias.command
         return self.words[0]
