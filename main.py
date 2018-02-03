@@ -10,8 +10,8 @@ from game import Game
 
 def main():
     game = Game()
-    parser = CmdParse(game)
-    # how is an IRC nick turned into a Player name?
+    parser = CmdParser(game)
+
 
 
 if __name__ == '__main__':

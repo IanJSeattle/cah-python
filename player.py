@@ -26,7 +26,7 @@ class Player(object):
 
     def get_score(self):
         return (self.points, self.wins, self.games_played)
-    
+
     def show_hand(self):
         return self.deck.show_hand('Answer')
 

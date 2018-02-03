@@ -12,7 +12,7 @@ from exceptions import NotPermitted
 
 class Game(object):
     def __init__(self):
-        self.status_codes = ['inactive', 'wait_players', 'wait_answers', 
+        self.status_codes = ['inactive', 'wait_players', 'wait_answers',
             'wait_czar', 'announcing']
         self._status = 'invalid'
         self.status = 'inactive'
@@ -27,12 +27,12 @@ class Game(object):
         self.lang = self.config['language']
         self.channel = self.config['default_channel']
         self.irc = Cahirc(self)
-        
+
     #-----------------------------------------------------------------
     # commands
     #-----------------------------------------------------------------
 
-    def start(self, player:Player=None, args:List=None):
+    def start(self, player: Player=None, args: List=None) -> None:
         # args are not used in this function
         self.status = 'wait_players'
         if player is not None:
@@ -70,7 +70,7 @@ class Game(object):
     def join(self, player, args):
         """ add a new player to the game """
         if player in self.players:
-            self.irc.say(self.channel, 
+            self.irc.say(self.channel,
                 self.config['text'][self.lang]['double_join'])
         else:
             self.add_player(player)
@@ -109,7 +109,7 @@ class Game(object):
         self.question = self.deck.deal('Question')
         q_text = re.sub('%s', '___', self.question.value)
         round_annc = self.config['text'][self.lang]['round_announcement']
-        round_annc = round_annc.format(round_num=self.round_num, 
+        round_annc = round_annc.format(round_num=self.round_num,
             czar=self.czar.nick)
         card_annc = self.config['text'][self.lang]['question_announcement']
         self.irc.say(self.channel, round_annc)
@@ -140,7 +140,7 @@ class Game(object):
     def announce_winner(self, player:Player) -> None:
         lang = self.config['language']
         text = self.config['text'][lang]['winner_announcement']
-        text = text.format(player=player.nick, 
+        text = text.format(player=player.nick,
             card=self.format_answer(self.answers[player]['cards']),
             points=player.points)
         self.irc.say(self.channel, text)
@@ -152,7 +152,7 @@ class Game(object):
         for player in players:
             cards = self.answers[player]['cards']
             self.irc.say(self.channel, self.format_answer(cards))
-            
+ 
     def format_answer(self, cards):
         # TODO: add extra {}s on the end to add up to the PICK number
         text = re.sub('%s', '{}', self.question.value)
@@ -206,7 +206,7 @@ class Game(object):
             self._status = state
         else:
             raise ValueError('No such game state')
-    
+
     @property
     def czar(self):
         return self.players[self._czar]
