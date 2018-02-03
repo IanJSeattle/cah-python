@@ -69,7 +69,11 @@ class Game(object):
 
     def join(self, player, args):
         """ add a new player to the game """
-        self.add_player(player)
+        if player in self.players:
+            self.irc.say(self.channel, 
+                self.config['text'][self.lang]['double_join'])
+        else:
+            self.add_player(player)
 
 
     #-----------------------------------------------------------------

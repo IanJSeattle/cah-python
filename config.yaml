@@ -19,4 +19,4 @@ text:
     winner_announcement: "Winner is: {player} with \"{card}\"  {player} gets one point, and now has {points} points"
     status_announcement: "Status: {czar} is the czar.  Waiting for {players} to play."
     round_start: "A new game is starting! Type join to get in."
-
+    double_join: "You are already in the game!"

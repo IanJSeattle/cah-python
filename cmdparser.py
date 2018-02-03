@@ -64,21 +64,17 @@ class CmdParser(object):
             return
         self.command = self.get_alias()
         if self.cmdattrs[self.command]:
-            if self.cmdattrs[self.command].anon:
-                self.register_player(msg)
             self.player = self.game.get_player(msg.nick)
+            registered = True
+            if self.player == None:
+                self.player = Player(msg.nick, msg.user)
+                registered = False
             self.get_args()
             if self.args == [] and self.cmdattrs[self.command].required:
                 self.command = None
                 return
-        if self.player is not None and self.cmdattrs[self.command].cardargs == True:
+        if registered and self.cmdattrs[self.command].cardargs == True:
             self.play_cards()
-
-    def register_player(self, msg):
-        nick = msg.nick
-        user = msg.user
-        if not self.game.get_player(nick):
-            self.game.add_player(Player(nick, user))
 
     def get_alias(self) -> str:
         for alias in self.aliases:
