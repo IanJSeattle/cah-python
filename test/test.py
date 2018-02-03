@@ -4,6 +4,7 @@
 import unittest, sys, os, re
 from unittest.mock import MagicMock
 from unittest.mock import patch
+from unittest.mock import call
 import irc.client
 
 sys.path.append('..')
@@ -14,11 +15,13 @@ from card import Card
 from deck import Deck
 from player import Player
 import game as gameclass
+from game import Game
+from game import cahirc
 from cmdparser import CmdParser
 from exceptions import (NotPermitted, NoMoreCards)
 from cahirc import IRCmsg, fakeIRCmsg
 
-gameclass.cahirc.Cahirc.say = MagicMock()
+cahirc.Cahirc.say = MagicMock()
 
 class CardTest(unittest.TestCase):
     def test_card(self):
@@ -201,17 +204,17 @@ class PlayerTest(unittest.TestCase):
 
 class GameTest(unittest.TestCase):
     def test_init_establishes_good_defaults(self):
-        game = gameclass.Game()
+        game = Game()
         self.assertEqual(game.status, 'inactive')
         self.assertIsInstance(game.deck, Deck)
 
     def test_start_game_sets_state_correctly(self):
-        game = gameclass.Game()
+        game = Game()
         game.start()
         self.assertEqual(game.status, 'wait_players')
 
     def test_commander_runs_start_command(self):
-        game = gameclass.Game()
+        game = Game()
         msg = fakeIRCmsg('start') # bob is the default player
         p = CmdParser(game)
         p.parse(msg)
@@ -219,7 +222,7 @@ class GameTest(unittest.TestCase):
         self.assertEqual('wait_players', game.status)
 
     def test_commander_runs_play_command(self):
-        game = gameclass.Game()
+        game = Game()
         p = CmdParser(game)
         bob = Player('Bob', '~bobbo')
         jim = Player('Jim', '~jimbo')
@@ -236,20 +239,20 @@ class GameTest(unittest.TestCase):
 
 class GamePlayerTest(unittest.TestCase):
     def test_adding_player_does(self):
-        game = gameclass.Game()
+        game = Game()
         bob = Player('Bob', '~bobbo')
         game.add_player(bob)
         self.assertEqual([bob], game.players)
 
     def test_adding_dupe_player_is_ignored(self):
-        game = gameclass.Game()
+        game = Game()
         bob = Player('Bob', '~bobbo')
         game.add_player(bob)
         game.add_player(bob)
         self.assertEqual([bob], game.players)
 
     def test_first_player_is_czar(self):
-        game = gameclass.Game()
+        game = Game()
         bob = Player('Bob', '~bobbo')
         joe = Player('Joe', '~bobbo')
         jim = Player('Jim', '~bobbo')
@@ -259,7 +262,7 @@ class GamePlayerTest(unittest.TestCase):
         self.assertEqual(bob, game.czar)
 
     def test_next_czar_works(self):
-        game = gameclass.Game()
+        game = Game()
         bob = Player('Bob', '~bobbo')
         joe = Player('Joe', '~bobbo')
         game.add_player(bob)
@@ -268,7 +271,7 @@ class GamePlayerTest(unittest.TestCase):
         self.assertEqual(joe, game.czar)
 
     def test_next_czar_loops(self):
-        game = gameclass.Game()
+        game = Game()
         bob = Player('Bob', '~bobbo')
         joe = Player('Joe', '~bobbo')
         jim = Player('Jim', '~bobbo')
@@ -280,20 +283,30 @@ class GamePlayerTest(unittest.TestCase):
         self.assertEqual(bob, game.next_czar())
 
     def test_player_starts_and_is_registered(self):
-        game = gameclass.Game()
+        game = Game()
         bob = Player('Bob', '~bobbo')
         msg = fakeIRCmsg('start')
         p = CmdParser(game)
         p.parse(msg)
+        game.command(p)
         self.assertEqual(str(bob), str(game.players[0]))
 
-    # TODO: test that a player trying to join who's already joined gets
-    # some kind of error message
+    def test_player_start_cant_join(self):
+        game = Game()
+        p = CmdParser(game)
+        bob = Player('Bob', '~bobbo')
+        msg = fakeIRCmsg('start')
+        p.parse(msg)
+        game.command(p)
+        msg = fakeIRCmsg('join')
+        p.parse(msg)
+        game.command(p)
+        self.assertEqual(1, len(game.players))
 
 
 class PlayTest(unittest.TestCase):
     def test_game_serves_question_card(self):
-        game = gameclass.Game()
+        game = Game()
         bob = Player('Bob', '~bobbo')
         joe = Player('Joe', '~bobbo')
         jim = Player('Jim', '~bobbo')
@@ -305,7 +318,7 @@ class PlayTest(unittest.TestCase):
         self.assertIsNot(None, game.question)
 
     def test_game_deals_to_players(self):
-        game = gameclass.Game()
+        game = Game()
         bob = Player('Bob', '~bobbo')
         joe = Player('Joe', '~bobbo')
         jim = Player('Jim', '~bobbo')
@@ -318,7 +331,7 @@ class PlayTest(unittest.TestCase):
         self.assertEqual(10, len(jim.show_hand()))
 
     def test_czar_answer_not_accepted(self):
-        game = gameclass.Game()
+        game = Game()
         bob = Player('Bob', '~bobbo')
         joe = Player('Joe', '~bobbo')
         jim = Player('Jim', '~bobbo')
@@ -330,7 +343,7 @@ class PlayTest(unittest.TestCase):
             game.play(bob, bob.deal(1))
 
     def test_other_answers_accepted(self):
-        game = gameclass.Game()
+        game = Game()
         bob = Player('Bob', '~bobbo')
         joe = Player('Joe', '~bobbo')
         jim = Player('Jim', '~bobbo')
@@ -345,7 +358,7 @@ class PlayTest(unittest.TestCase):
         self.assertEqual(2, len(game.answers))
         
     def test_multiple_plays_not_allowed(self):
-        game = gameclass.Game()
+        game = Game()
         bob = Player('Bob', '~bobbo')
         joe = Player('Joe', '~bobbo')
         jim = Player('Jim', '~bobbo')
@@ -358,7 +371,7 @@ class PlayTest(unittest.TestCase):
             game.play(jim, jim.deal(1))
 
     def test_correct_status_once_all_played(self):
-        game = gameclass.Game()
+        game = Game()
         bob = Player('Bob', '~bobbo')
         joe = Player('Joe', '~bobbo')
         jim = Player('Jim', '~bobbo')
@@ -371,7 +384,7 @@ class PlayTest(unittest.TestCase):
         self.assertEqual('wait_czar', game.status)
 
     def test_post_complete_plays_fail(self):
-        game = gameclass.Game()
+        game = Game()
         bob = Player('Bob', '~bobbo')
         joe = Player('Joe', '~bobbo')
         jim = Player('Jim', '~bobbo')
@@ -385,7 +398,7 @@ class PlayTest(unittest.TestCase):
             game.play(jim, jim.deal(1))
 
     def test_selcting_answer_ups_score(self):
-        game = gameclass.Game()
+        game = Game()
         bob = Player('Bob', '~bobbo')
         joe = Player('Joe', '~bobbo')
         jim = Player('Jim', '~bobbo')
@@ -399,7 +412,7 @@ class PlayTest(unittest.TestCase):
         self.assertEqual(1, game.answer_order[0].points)
         
     def test_selecting_answer_moves_czar(self):
-        game = gameclass.Game()
+        game = Game()
         bob = Player('Bob', '~bobbo')
         joe = Player('Joe', '~bobbo')
         jim = Player('Jim', '~bobbo')
@@ -415,11 +428,11 @@ class PlayTest(unittest.TestCase):
 
 class ParserTest(unittest.TestCase):
     def setUp(self):
-        self.game = gameclass.Game()
+        self.game = Game()
         self.p = CmdParser(self.game)
 
     def test_basic_command_works(self):
-        game = gameclass.Game()
+        game = Game()
         cmdstring = 'start'
         msg = fakeIRCmsg(cmdstring)
         self.p.parse(msg)
@@ -567,7 +580,7 @@ class ConfigTest(unittest.TestCase):
 
 class BasicIRCTest(unittest.TestCase):
     def test_irc_msg_obj(self):
-        game = gameclass.Game()
+        game = Game()
         bob = Player('Bob', '~bobbo')
         game.add_player(bob)
         msg = fakeIRCmsg('hello')
@@ -576,33 +589,35 @@ class BasicIRCTest(unittest.TestCase):
         self.assertEqual(msg.msg, 'hello')
         self.assertEqual(msg.source, 'privmsg')
 
-    def test_game_creates_player_from_irc(self):
-        expected_player = Player('Bob', '~bobbo')
-        game = gameclass.Game()
-        msg = fakeIRCmsg('start') # Bob is the default user
-        p = CmdParser(game)
-        p.parse(msg)
-        self.assertEqual(str(game.players[0]), str(expected_player))
-
 
 class GameIRCTest(unittest.TestCase):
     def setUp(self):
-        gameclass.cahirc.Cahirc.say.reset_mock()
+        cahirc.Cahirc.say.reset_mock()
 
     def test_game_start_says_game_start(self):
         config = Config()
         chan = config.data['default_channel']
         text = config.data['text']['en']['round_start']
-        game = gameclass.Game()
+        game = Game()
         bob = Player('Bob', '~bobbo')
         p = CmdParser(game)
         msg = fakeIRCmsg('start')
         p.parse(msg)
         game.command(p)
-        gameclass.cahirc.Cahirc.say.assert_called_with(chan, text)
+        cahirc.Cahirc.say.assert_called_with(chan, text)
+
+    def test_game_start_says_game_start(self):
+        config = Config()
+        game = Game()
+        bob = Player('Bob', '~bobbo')
+        p = CmdParser(game)
+        msg = fakeIRCmsg('start')
+        p.parse(msg)
+        game.command(p)
+        self.assertEqual(1, len(cahirc.Cahirc.say.mock_calls))
 
     def test_game_start_joining_works(self):
-        game = gameclass.Game()
+        game = Game()
         # a person who says something on the channel is registered as a
         # Player for this exact situation
         bob = Player('Bob', '~bobbo')
@@ -613,7 +628,7 @@ class GameIRCTest(unittest.TestCase):
         self.assertEqual(str(bob), str(game.players[0]))
 
     def test_game_join_joining_works(self):
-        game = gameclass.Game()
+        game = Game()
         bob = Player('Bob', '~bobbo')
         p = CmdParser(game)
         msg = fakeIRCmsg('start')
@@ -626,7 +641,7 @@ class GameIRCTest(unittest.TestCase):
         self.assertEqual([str(bob), str(jim)], [str(p) for p in game.players])
 
     def test_game_three_join_starts(self):
-        game = gameclass.Game()
+        game = Game()
         bob = Player('Bob', '~bobbo')
         p = CmdParser(game)
         msg = fakeIRCmsg('start')
@@ -643,8 +658,22 @@ class GameIRCTest(unittest.TestCase):
         game.command(p)
         self.assertEqual('wait_answers', game.status)
 
+    def test_double_join_complains(self):
+        cahirc.Cahirc.say.reset_mock()
+        game = Game()
+        p = CmdParser(game)
+        msg = fakeIRCmsg('start')
+        p.parse(msg)
+        game.command(p)
+        msg = fakeIRCmsg('join')
+        p.parse(msg)
+        game.command(p)
+        config = Config()
+        self.assertTrue(re.search(config.data['text']['en']['double_join'],
+            str(cahirc.Cahirc.say.mock_calls[1])))
+
     def test_game_three_join_starts(self):
-        game = gameclass.Game()
+        game = Game()
         bob = Player('Bob', '~bobbo')
         p = CmdParser(game)
         msg = fakeIRCmsg('start')
@@ -665,7 +694,7 @@ class GameIRCTest(unittest.TestCase):
     def test_first_question_displays(self):
         config = Config().data
         chan = config['default_channel']
-        game = gameclass.Game()
+        game = Game()
         bob = Player('Bob', '~bobbo')
         joe = Player('Joe', '~bobbo')
         jim = Player('Jim', '~bobbo')
@@ -674,12 +703,12 @@ class GameIRCTest(unittest.TestCase):
         game.add_player(joe)
         game.add_player(jim)
         self.assertTrue(re.search('Card: ', 
-            str(gameclass.cahirc.Cahirc.say.mock_calls[2])))
+            str(cahirc.Cahirc.say.mock_calls[2])))
 
     def test_joe_gets_cards(self):
-        gameclass.cahirc.Cahirc.say.reset_mock()
+        cahirc.Cahirc.say.reset_mock()
         config = Config().data
-        game = gameclass.Game()
+        game = Game()
         bob = Player('Bob', '~bobbo')
         joe = Player('Joe', '~bobbo')
         jim = Player('Jim', '~bobbo')
@@ -688,12 +717,12 @@ class GameIRCTest(unittest.TestCase):
         game.add_player(joe)
         game.add_player(jim)
         self.assertTrue(re.search('Your cards are: ', 
-            str(gameclass.cahirc.Cahirc.say.mock_calls[3])))
+            str(cahirc.Cahirc.say.mock_calls[3])))
 
     def test_candidates_are_announced(self):
-        gameclass.cahirc.Cahirc.say.reset_mock()
+        cahirc.Cahirc.say.reset_mock()
         config = Config().data
-        game = gameclass.Game()
+        game = Game()
         bob = Player('Bob', '~bobbo')
         joe = Player('Joe', '~bobbo')
         jim = Player('Jim', '~bobbo')
@@ -705,21 +734,46 @@ class GameIRCTest(unittest.TestCase):
         game.play(jim, jim.deal(1))
         played_annc = config['text']['en']['all_cards_played']
         self.assertTrue(re.search(played_annc,
-            str(gameclass.cahirc.Cahirc.say.mock_calls[5])))
+            str(cahirc.Cahirc.say.mock_calls[5])))
 
     def test_irc_game(self):
-        gameclass.cahirc.Cahirc.say.reset_mock()
-        game = gameclass.Game()
+        config = Config().data
+        game = Game()
+        bob = Player('Bob', '~bobbo')
+        jim = Player('Jim', '~jimbo')
+        joe = Player('Joe', '~joebo')
+        cahirc.Cahirc.say.reset_mock()
+        self.assertEqual([], cahirc.Cahirc.say.mock_calls)
         p = CmdParser(game)
-        #p.parse()
+        msg = fakeIRCmsg('start', user=bob)
+        p.parse(msg)
+        game.command(p)
+        self.assertEqual(1, len(cahirc.Cahirc.say.mock_calls))
+        msg = fakeIRCmsg('join', user=jim)
+        p.parse(msg)
+        game.command(p)
+        self.assertEqual(1, len(cahirc.Cahirc.say.mock_calls))
+        msg = fakeIRCmsg('join', user=joe)
+        p.parse(msg)
+        game.command(p)
+        self.assertTrue(re.search(config['text']['en']['round_start'],
+            str(cahirc.Cahirc.say.mock_calls[0])))
+        round_annc = config['text']['en']['round_announcement'].format(round_num=1, czar='Bob')
+        round_call = call('\\#test', round_annc)
+        self.assertEqual(str(round_call),
+            str(cahirc.Cahirc.say.mock_calls[1]))
+
+
+    def test_receive_irc(self):
+        game = Game()
 
         
 
 
 class ResponseTest(unittest.TestCase):
     def test_round_num_displays(self):
-        gameclass.cahirc.Cahirc.say.reset_mock()
-        game = gameclass.Game()
+        cahirc.Cahirc.say.reset_mock()
+        game = Game()
         bob = Player('Bob', '~bobbo')
         joe = Player('Joe', '~bobbo')
         jim = Player('Jim', '~bobbo')
@@ -728,13 +782,13 @@ class ResponseTest(unittest.TestCase):
         game.add_player(joe)
         game.add_player(jim)
         self.assertTrue(re.search("Round 1!",
-            str(gameclass.cahirc.Cahirc.say.mock_calls[1])))
+            str(cahirc.Cahirc.say.mock_calls[1])))
         self.assertTrue(re.search("Bob is the card czar",
-            str(gameclass.cahirc.Cahirc.say.mock_calls[1])))
+            str(cahirc.Cahirc.say.mock_calls[1])))
 
     def test_answers_are_displayed(self):
-        gameclass.cahirc.Cahirc.say.reset_mock()
-        game = gameclass.Game()
+        cahirc.Cahirc.say.reset_mock()
+        game = Game()
         answer_card = Card('Answer', 'TEST')
         question_card= Card('Question', '%s is TEST')
         bob = Player('Bob', '~bobbo')
@@ -749,13 +803,13 @@ class ResponseTest(unittest.TestCase):
         game.play(joe, answer_card)
         game.play(jim, answer_card)
         self.assertEqual(f"call('\\\\#test', '{expected_answer}')",
-            str(gameclass.cahirc.Cahirc.say.mock_calls[-1]))
+            str(cahirc.Cahirc.say.mock_calls[-1]))
 
     def test_winner_is_announced(self):
         config = Config().data
         text = config['text']['en']['winner_announcement']
-        gameclass.cahirc.Cahirc.say.reset_mock()
-        game = gameclass.Game()
+        cahirc.Cahirc.say.reset_mock()
+        game = Game()
         bob = Player('Bob', '~bobbo')
         joe = Player('Joe', '~bobbo')
         jim = Player('Jim', '~bobbo')
@@ -774,7 +828,7 @@ class ResponseTest(unittest.TestCase):
         expected_answer = text.format(player=winner.nick,
             card=f'{winner.nick.upper()} is TEST', points=1)
         self.assertEqual(f"call('\\\\#test', '{expected_answer}')",
-            str(gameclass.cahirc.Cahirc.say.mock_calls[-1]))
+            str(cahirc.Cahirc.say.mock_calls[-1]))
 
 
 if __name__ == '__main__':
