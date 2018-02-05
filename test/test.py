@@ -659,8 +659,6 @@ class GameIRCTest(unittest.TestCase):
 
     def test_game_start_joining_works(self):
         game = Game()
-        # a person who says something on the channel is registered as a
-        # Player for this exact situation
         bob = Player('Bob', '~bobbo')
         p = CmdParser(game)
         msg = FakeIRCmsg('start')
