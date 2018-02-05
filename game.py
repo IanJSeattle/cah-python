@@ -1,12 +1,13 @@
 # vi: set expandtab ai:
 
-import config, os, re
+import config
+import os
+import re
 from typing import List
 from deck import Deck
 from card import Card
 from player import Player
-from cahirc import Cahirc
-import cahirc
+import cahirc as irc
 from random import shuffle
 from exceptions import NotPermitted
 
@@ -26,7 +27,7 @@ class Game(object):
         self.config = config.Config().data
         self.lang = self.config['language']
         self.channel = self.config['default_channel']
-        self.irc = Cahirc(self)
+        self.irc = irc.Cahirc(self)
 
     #-----------------------------------------------------------------
     # commands
@@ -41,7 +42,6 @@ class Game(object):
         self.deck.shuffle()
         text = self.config['text'][self.lang]['round_start']
         self.irc.say(self.channel, text)
-        # TODO: announce the start of the game
 
     def play(self, player, cards):
         """ cards is an array of Card objects """
@@ -75,6 +75,10 @@ class Game(object):
         else:
             self.add_player(player)
 
+    def state(self, player, args):
+        """ report current game state """
+        self.irc.say(self.channel,
+            self.config['text'][self.lang]['not_implemented'])
 
     #-----------------------------------------------------------------
     # methods
@@ -94,12 +98,12 @@ class Game(object):
                 return player
         return None
 
-    def next_czar(self):
+    def next_czar(self) -> int:
         self._czar += 1
         self._czar %= len(self.players)
         return self.czar
 
-    def commence(self):
+    def commence(self) -> None:
         self.deal_all_players(self.config['hand_size'])
         self.start_round()
 
@@ -117,6 +121,7 @@ class Game(object):
         self.show_hands()
 
     def load_cards(self):
+        self.deck = Deck()
         currdir = os.getcwd()
         os.chdir(self.config['carddir'])
         files = os.listdir()
@@ -174,9 +179,6 @@ class Game(object):
             self.answers[player]['order'] = i
             i += 1
         return players
-
-    def receive_irc(self, source, nick, user, msg):
-        ''' receive some IRC goodness here'''
 
     def show_hands(self):
         for player in self.players:

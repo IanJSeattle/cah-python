@@ -16,12 +16,13 @@ from config import Config
 from card import Card
 from deck import Deck
 from player import Player
-import game as gameclass
-from game import Game
-from game import cahirc
 from cmdparser import CmdParser
 from exceptions import (NotPermitted, NoMoreCards)
 from cahirc import IRCmsg, FakeIRCmsg
+
+from game import Game
+import game as gameclass
+from game import irc as cahirc
 
 cahirc.Cahirc.say = MagicMock()
 
@@ -158,6 +159,12 @@ class DeckTest(unittest.TestCase):
         self.assertEqual(deck.show_hand('Answer').sort(),
             deck2.show_hand('Answer').sort())
 
+    def test_load_cards_twice_no_dupes(self):
+        game = Game()
+        game.load_cards()
+        num = len(game.deck.questioncards)
+        game.load_cards()
+        self.assertEqual(num, len(game.deck.questioncards))
 
 class PlayerTest(unittest.TestCase):
     def test_create_player_works(self):
@@ -237,6 +244,7 @@ class GameTest(unittest.TestCase):
         p.parse(msg)
         game.command(p)
         self.assertEqual(9, len(jim.show_hand()))
+
 
 
 class GamePlayerTest(unittest.TestCase):
@@ -428,6 +436,29 @@ class PlayTest(unittest.TestCase):
         self.assertEqual(joe, game.czar)
 
 
+class StatusTest(unittest.TestCase):
+    def setUp(self):
+        cahirc.Cahirc.say.reset_mock()
+
+    def test_status_command_does_anything(self):
+        game = Game()
+        p = CmdParser(game)
+        msg = FakeIRCmsg('status')
+        p.parse(msg)
+        game.command(p)
+        self.assertNotEqual([], cahirc.Cahirc.say.mock_calls)
+
+    def test_status_says_not_defined(self):
+        game = Game()
+        config = Config().data
+        p = CmdParser(game)
+        msg = FakeIRCmsg('status')
+        p.parse(msg)
+        game.command(p)
+        expected = call('#test', config['text']['en']['not_implemented'])
+        self.assertEqual(expected, cahirc.Cahirc.say.mock_calls[0])
+
+
 class ParserTest(unittest.TestCase):
     def setUp(self):
         self.game = Game()
@@ -464,7 +495,6 @@ class ParserTest(unittest.TestCase):
         msg = FakeIRCmsg(cmdstring, user=bob)
         self.p.parse(msg)
         self.assertEqual('play', self.p.command)
-        #self.assertEqual([3, 4, 5], self.p.args)
         self.assertEqual(3, len(self.p.args))
         self.assertEqual([str, str, str], [type(i) for i in self.p.args])
 
@@ -520,6 +550,12 @@ class ParserTest(unittest.TestCase):
         self.game.status = 'wait_czar'
         self.p.parse(msg)
         self.assertEqual('score', self.p.command)
+
+    def test_commands_wo_args_ignored_w_args(self):
+        cmdstring = 'shame about the weather'
+        msg = FakeIRCmsg(cmdstring)
+        self.p.parse(msg)
+        self.assertIsNone(self.p.command)
 
     def test_dealing_a_card_works(self):
         bob = Player('Bob', '~bobbo')
@@ -590,6 +626,9 @@ class BasicIRCTest(unittest.TestCase):
         self.assertEqual(msg.user, '~bobbo')
         self.assertEqual(msg.msg, 'hello')
         self.assertEqual(msg.source, 'privmsg')
+
+    # TODO: test for a privmsg getting a privmsg in return, and a pubmsg
+    # getting a pubmsg in return
 
 
 class GameIRCTest(unittest.TestCase):
@@ -761,7 +800,7 @@ class GameIRCTest(unittest.TestCase):
         self.assertTrue(re.search(config['text']['en']['round_start'],
             str(cahirc.Cahirc.say.mock_calls[0])))
         round_annc = config['text']['en']['round_announcement'].format(round_num=1, czar='Bob')
-        round_call = call('\\#test', round_annc)
+        round_call = call('#test', round_annc)
         self.assertEqual(str(round_call),
             str(cahirc.Cahirc.say.mock_calls[1]))
 
@@ -803,7 +842,7 @@ class ResponseTest(unittest.TestCase):
         expected_answer = 'TEST is TEST'
         game.play(joe, answer_card)
         game.play(jim, answer_card)
-        self.assertEqual(f"call('\\\\#test', '{expected_answer}')",
+        self.assertEqual(f"call('#test', '{expected_answer}')",
             str(cahirc.Cahirc.say.mock_calls[-1]))
 
     def test_winner_is_announced(self):
@@ -828,7 +867,7 @@ class ResponseTest(unittest.TestCase):
         winner = game.answer_order[0]
         expected_answer = text.format(player=winner.nick,
             card=f'{winner.nick.upper()} is TEST', points=1)
-        self.assertEqual(f"call('\\\\#test', '{expected_answer}')",
+        self.assertEqual(f"call('#test', '{expected_answer}')",
             str(cahirc.Cahirc.say.mock_calls[-1]))
 
 
