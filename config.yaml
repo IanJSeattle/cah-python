@@ -1,13 +1,22 @@
 # vi: set wm=0 ai ts=2 sw=2 expandtab:
 
+# directories
 carddir: cards
-default_channel: \#test
-server: irc.muppetlabs.com
-my_nick: pycardbot
+logfile: cah.log
+
+# game information
 min_players: 3
 max_players: 10
-language: en
 hand_size: 10
+
+# IRC information
+default_channel: "#test"
+server: "irc.muppetlabs.com"
+port: 6667
+my_nick: "pycardbot"
+
+# text and localization
+language: en
 
 text:
   en:
@@ -20,3 +29,4 @@ text:
     status_announcement: "Status: {czar} is the czar.  Waiting for {players} to play."
     round_start: "A new game is starting! Type join to get in."
     double_join: "You are already in the game!"
+    not_implemented: "This command is not yet implemented"

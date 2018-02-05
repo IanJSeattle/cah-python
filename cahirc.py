@@ -1,60 +1,80 @@
-#!/usr/bin/env python
 # vi: set ai wm=0 ts=4 sw=4 et:
-#
-# Example program using irc.bot.
-#
-# based on code by Joel Rosdahl <joel@rosdahl.net>
+""" provides IRC services for the CAH bot. depends upon the irc library. """
 
+import logging
 import irc.bot
 import irc.strings
 from irc.client import Event, NickMask
 from config import Config
 from player import Player
+from main import receive_msg
+import cmdparser as p
+
+logger = logging.getLogger(__name__)
 
 class Cahirc(irc.bot.SingleServerIRCBot):
     def __init__(self, game):
         config = Config().data
-        port = config['port'] if 'port' in config else 6667
-        super().__init__([(config['server'], port)], config['my_nick'],
-            config['my_nick'])
-        self.channel = config['default_channel']
         self.game = game
+        self.parser = p.CmdParser(game)
+        port = config['port'] if 'port' in config else 6667
+        nickname = config['my_nick']
+        server = config['server']
+        port = config['port']
+        super().__init__([(server, port)], nickname, nickname)
+        self.channel = config['default_channel']
+
+    #------------------------------------------------------------
+    # IRC bot functions
+    #------------------------------------------------------------
+
+    def start(self):
+        logger.info('Starting IRC subsystem')
+        super().start()
 
     def on_nicknameinuse(self, connection, event):
-        connection.nick(connection.get_nickname() + "_")
+        nick = connetion.get_nickname()
+        newnick = nick + '_'
+        logger.info(f'Nickname "{nick}" already in use, trying "{newnick}"')
+        connection.nick(newnick)
 
     def on_welcome(self, connection, event):
+        logger.info(f'Joining {self.channel}')
         connection.join(self.channel)
 
     def on_privmsg(self, connection, event):
-        self.tell_game(connection, event)
+        receive_msg(self.game, IRCmsg(event))
 
     def on_pubmsg(self, connection, event):
-        self.tell_game(connection, event)
+        receive_msg(self.game, IRCmsg(event))
 
-    def tell_game(self, connection, event):
-        nick = event.source.nick
-        user = event.source.user
-        game.receive_irc(str(event.type), nick, user, str(event.arguments[0]))
+    #------------------------------------------------------------
+    # CAH specific functions
+    #------------------------------------------------------------
 
     def say(self, recipient, text):
+        """ recipient is either the channel name, or the nick for a privmsg """
+        logger.debug(f'Sending to {recipient}: {text}')
         self.connection.privmsg(recipient, text)
-
-    # some other process will have to call irc.start(), i guess
 
 
 class IRCmsg(object):
+    """ message object to simplify message passing """
     def __init__(self, event):
         self.nick = event.source.nick
         self.user = event.source.user
         self.msg = event.arguments[0]
         self.source = event.type
+        logger.debug(f'Got {self.source} from {self.nick}: {self.msg}')
 
     def make_player(self):
         return Player(self.nick, self.user)
 
 
 class FakeIRCmsg(IRCmsg):
+    """ only used for testing.  it can take either a well formed user string
+    (see default user argument) or a Player object.  poorly formed strings will
+    cause problems, so don't do that. """
     def __init__(self, string, user='Bob!~bobbo@127.0.0.1'):
         if isinstance(user, Player):
             user = '{}!{}@127.0.0.1'.format(user.nick, user.user)

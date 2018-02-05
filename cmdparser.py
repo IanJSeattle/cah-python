@@ -3,36 +3,40 @@
 import re
 from collections import namedtuple
 from typing import List
-from game import Game
+import game
 from player import Player
-from cahirc import IRCmsg
+import cahirc as irc
 
 
 class CmdParser(object):
     """ this class represents the command parsing structure for the
     game. """
 
-    def __init__(self, game: Game) -> None:
+    def __init__(self, game):
         # hasargs: command can take arguments
         # required: arguments are required, and a cmd without args will
         # be discarded
         # cardargs: arguments are cards
         # anon: command can be invoked even if not registered in the game
         Attrs = namedtuple('Attrs', 'hasargs required cardargs anon')
-        self.cmdattrs = { 'pick': Attrs(True, True, False, False),
+        self.cmdattrs = { 
+                     'cards': Attrs(False, False, False, False),
+                     'join': Attrs(False, False, False, True),
+                     'pick': Attrs(True, True, False, False),
                      'play': Attrs(True, True, True, False),
-                     'winner': Attrs(True, True, False, False),
-                     'start': Attrs(True, False, False, True),
-                     'status': Attrs(False, False, False, False),
                      'score': Attrs(False, False, False, False),
                      'shame': Attrs(False, False, False, False),
-                     'cards': Attrs(False, False, False, False),
-                     'join': Attrs(False, False, False, True)}
+                     'start': Attrs(True, False, False, True),
+                     'state': Attrs(False, False, False, False),
+                     'status': Attrs(False, False, False, False),
+                     'winner': Attrs(True, True, False, False),
+                     }
 
         Cmdalias = namedtuple('Cmdalias', 'alias command state')
         self.aliases = [ Cmdalias('pick', 'play', 'wait_answers'),
                          Cmdalias('pick', 'winner', 'wait_czar'),
-                         Cmdalias('shame', 'score', 'any') ]
+                         Cmdalias('shame', 'score', 'any'),
+                         Cmdalias('status', 'state', 'any') ]
 
         # the maximum number of arguments any command can take
         self.max_args = 3
@@ -45,7 +49,10 @@ class CmdParser(object):
         self.command: str = None
 
     def is_command(self) -> bool:
-        if self.words[0] in self.cmdattrs:
+        word = self.words[0]
+        if word in self.cmdattrs:
+            if not self.cmdattrs[word].hasargs and len(self.words) > 1:
+                return False
             return True
         return False
 
@@ -56,7 +63,7 @@ class CmdParser(object):
             if re.search('^\d$', self.words[i]):
                 self.args.append(int(self.words[i]))
 
-    def parse(self, msg: IRCmsg=None) -> None:
+    def parse(self, msg=None):
         if msg.msg is not None:
             self.string = msg.msg
         if not self.is_command():
