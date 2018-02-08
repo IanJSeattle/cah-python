@@ -77,8 +77,24 @@ class Game(object):
 
     def state(self, player, args):
         """ report current game state """
-        self.irc.say(self.channel,
-            self.config['text'][self.lang]['not_implemented'])
+        if self.status == 'inactive':
+            self.irc.say(self.channel,
+                self.config['text'][self.lang]['status']['inactive'])
+        elif self.status == 'wait_players':
+            msg = self.config['text'][self.lang]['status']['wait_players']
+            msg = msg.format(num=self.config['min_players']-len(self.players))
+            self.irc.say(self.channel, msg)
+        elif self.status == 'wait_answers':
+            all_players = set([player.nick for player in self.players]) 
+            played = set([name for name in self.answers])
+            czar = set([self.czar.nick])
+            playerlist = all_players - played
+            playerlist = playerlist - czar
+            players = playerlist_format(list(playerlist))
+            question = self.question.formattedvalue
+            msg = self.config['text'][self.lang]['status']['wait_answers']
+            msg = msg.format(players=players, question=question)
+            self.irc.say(self.channel, msg)
 
     #-----------------------------------------------------------------
     # methods
@@ -111,7 +127,7 @@ class Game(object):
         self.round_num += 1
         self.status = 'wait_answers'
         self.question = self.deck.deal('Question')
-        q_text = re.sub('%s', '___', self.question.value)
+        q_text = self.question.formattedvalue
         round_annc = self.config['text'][self.lang]['round_announcement']
         round_annc = round_annc.format(round_num=self.round_num,
             czar=self.czar.nick)
@@ -212,3 +228,13 @@ class Game(object):
     @property
     def czar(self):
         return self.players[self._czar]
+
+
+def playerlist_format(playerlist):
+    size = len(playerlist)
+    if size == 1:
+        return playerlist[0]
+    if size == 2:
+        return ' and '.join(playerlist)
+    if size > 2:
+        return ', '.join(playerlist[0:-1]) + ' and ' + playerlist[-1]
