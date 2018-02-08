@@ -438,6 +438,7 @@ class PlayTest(unittest.TestCase):
 
 class StatusTest(unittest.TestCase):
     def setUp(self):
+        self.config = Config().data
         cahirc.Cahirc.say.reset_mock()
 
     def test_status_command_does_anything(self):
@@ -448,15 +449,45 @@ class StatusTest(unittest.TestCase):
         game.command(p)
         self.assertNotEqual([], cahirc.Cahirc.say.mock_calls)
 
-    def test_status_says_not_defined(self):
+    def test_status_wait_players(self):
+        text = self.config['text']['en']['status']['wait_players']
+        text = text.format(num=2)
+        expected = call('#test', text)
         game = Game()
-        config = Config().data
         p = CmdParser(game)
+        msg = FakeIRCmsg('start')
+        p.parse(msg)
+        game.command(p)
         msg = FakeIRCmsg('status')
         p.parse(msg)
         game.command(p)
-        expected = call('#test', config['text']['en']['not_implemented'])
-        self.assertEqual(expected, cahirc.Cahirc.say.mock_calls[0])
+        self.assertEqual(expected, cahirc.Cahirc.say.mock_calls[1])
+
+    def test_status_inactive(self):
+        bob = Player('Bob', '~bobbo')
+        text = self.config['text']['en']['status']['inactive']
+        expected = call('#test', text)
+        game = Game()
+        game.status = 'inactive'
+        game.state(bob, [])
+        self.assertEqual(str(expected), str(cahirc.Cahirc.say.mock_calls[0]))
+
+    def test_status_wait_answers(self):
+        bob = Player('Bob', '~bobbo')
+        jim = Player('Jim', '~jimbo')
+        joe = Player('Joe', '~joebo')
+        game = Game()
+        game.start() #status should how be wait_answers
+        game.add_player(bob)
+        game.add_player(jim)
+        game.add_player(joe)
+        question = game.question.formattedvalue
+        players = gameclass.playerlist_format([jim.nick, joe.nick])
+        text = self.config['text']['en']['status']['wait_answers']
+        text = text.format(players=players, question=question)
+        expected = call('#test', text)
+        game.state(bob, [])
+        self.assertEqual(str(expected), str(cahirc.Cahirc.say.mock_calls[5]))
 
 
 class ParserTest(unittest.TestCase):
