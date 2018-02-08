@@ -473,6 +473,9 @@ class StatusTest(unittest.TestCase):
         self.assertEqual(str(expected), str(cahirc.Cahirc.say.mock_calls[0]))
 
     def test_status_wait_answers(self):
+        # TODO: update this test so that one of the players has already played.
+        # this will simplify the problem of the non-deterministic playerlist
+        # order.
         bob = Player('Bob', '~bobbo')
         jim = Player('Jim', '~jimbo')
         joe = Player('Joe', '~joebo')
@@ -487,7 +490,38 @@ class StatusTest(unittest.TestCase):
         text = text.format(players=players, question=question)
         expected = call('#test', text)
         game.state(bob, [])
-        self.assertEqual(str(expected), str(cahirc.Cahirc.say.mock_calls[5]))
+        self.assertEqual(str(expected), str(cahirc.Cahirc.say.mock_calls[5]),
+            msg='This test fails regularly since the order of the player list is not deterministic')
+
+
+class CardsCmdTest(unittest.TestCase):
+    def setUp(self):
+        cahirc.Cahirc.say.reset_mock()
+
+    def test_cards_reports_not_impl(self):
+        game = Game()
+        p = CmdParser(game)
+        cmdstring = 'cards'
+        msg = FakeIRCmsg(cmdstring)
+        p.parse(msg)
+        game.command(p)
+        expected = call('#test', 'This feature is not yet implemented')
+        self.assertEqual(str(expected), str(cahirc.Cahirc.say.mock_calls[0]))
+
+
+class ScoreTest(unittest.TestCase):
+    def setUp(self):
+        cahirc.Cahirc.say.reset_mock()
+
+    def test_score_reports_not_impl(self):
+        game = Game()
+        p = CmdParser(game)
+        cmdstring = 'score'
+        msg = FakeIRCmsg(cmdstring)
+        p.parse(msg)
+        game.command(p)
+        expected = call('#test', 'This feature is not yet implemented')
+        self.assertEqual(str(expected), str(cahirc.Cahirc.say.mock_calls[0]))
 
 
 class ParserTest(unittest.TestCase):

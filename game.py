@@ -33,15 +33,17 @@ class Game(object):
     # commands
     #-----------------------------------------------------------------
 
-    def start(self, player: Player=None, args: List=None) -> None:
-        # args are not used in this function
-        self.status = 'wait_players'
-        if player is not None:
+    def cards(self, player: Player=None, args: List=None) -> None:
+        """ show a player's hand """
+        self.irc.say(self.channel, 'This feature is not yet implemented')
+
+    def join(self, player, args):
+        """ add a new player to the game """
+        if player in self.players:
+            self.irc.say(self.channel,
+                self.config['text'][self.lang]['double_join'])
+        else:
             self.add_player(player)
-        self.load_cards()
-        self.deck.shuffle()
-        text = self.config['text'][self.lang]['round_start']
-        self.irc.say(self.channel, text)
 
     def play(self, player, cards):
         """ cards is an array of Card objects """
@@ -59,21 +61,19 @@ class Game(object):
             self.status = 'wait_czar'
             self.announce_answers()
 
-    def winner(self, player:Player, answer_num):
-        """ record the winner of the round """
-        # player is the player who made the call; ignore
-        person = self.answer_order[answer_num]
-        person.record_win()
-        self.announce_winner(person)
-        self.next_czar()
+    def score(self, player: Player=None, args: List=None) -> None:
+        """ report the current score """
+        self.irc.say(self.channel, 'This feature is not yet implemented')
 
-    def join(self, player, args):
-        """ add a new player to the game """
-        if player in self.players:
-            self.irc.say(self.channel,
-                self.config['text'][self.lang]['double_join'])
-        else:
+    def start(self, player: Player=None, args: List=None) -> None:
+        # args are not used in this function
+        self.status = 'wait_players'
+        if player is not None:
             self.add_player(player)
+        self.load_cards()
+        self.deck.shuffle()
+        text = self.config['text'][self.lang]['round_start']
+        self.irc.say(self.channel, text)
 
     def state(self, player, args):
         """ report current game state """
@@ -95,6 +95,14 @@ class Game(object):
             msg = self.config['text'][self.lang]['status']['wait_answers']
             msg = msg.format(players=players, question=question)
             self.irc.say(self.channel, msg)
+
+    def winner(self, player:Player, answer_num):
+        """ record the winner of the round """
+        # player is the player who made the call; ignore
+        person = self.answer_order[answer_num]
+        person.record_win()
+        self.announce_winner(person)
+        self.next_czar()
 
     #-----------------------------------------------------------------
     # methods
