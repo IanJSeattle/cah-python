@@ -35,7 +35,10 @@ class Game(object):
 
     def cards(self, player: Player=None, args: List=None) -> None:
         """ show a player's hand """
-        self.irc.say(self.channel, 'This feature is not yet implemented')
+        annc = self.config['text'][self.lang]['question_announcement']
+        annc = annc.format(card=self.question.formattedvalue)
+        self.irc.say(player.nick, annc)
+        self.show_hand(player)
 
     def join(self, player, args):
         """ add a new player to the game """
@@ -86,7 +89,7 @@ class Game(object):
             self.irc.say(self.channel, msg)
         elif self.status == 'wait_answers':
             all_players = set([player.nick for player in self.players]) 
-            played = set([name for name in self.answers])
+            played = set([player.nick for player in self.answers])
             czar = set([self.czar.nick])
             playerlist = all_players - played
             playerlist = playerlist - czar
@@ -206,16 +209,19 @@ class Game(object):
 
     def show_hands(self):
         for player in self.players:
-            if player == self.czar:
-                continue
-            hand = player.show_hand()
-            annc = self.config['text'][self.lang]['player_hand']
-            handstring = ''
-            i = 0
-            for card in hand:
-                handstring += '[{}] {} '.format(i, card)
-                i += 1
-            self.irc.say(player.nick, annc.format(cards=handstring))
+            self.show_hand(player)
+
+    def show_hand(self, player):
+        if player == self.czar:
+            return
+        hand = player.show_hand()
+        annc = self.config['text'][self.lang]['player_hand']
+        handstring = ''
+        i = 0
+        for card in hand:
+            handstring += '[{}] {} '.format(i, card)
+            i += 1
+        self.irc.say(player.nick, annc.format(cards=handstring))
 
 
     #-----------------------------------------------------------------
