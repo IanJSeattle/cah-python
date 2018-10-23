@@ -22,6 +22,7 @@ class CmdParser(object):
         self.cmdattrs = { 
                      'cards': Attrs(False, False, False, False),
                      'join': Attrs(False, False, False, True),
+                     'list': Attrs(False, False, False, True),
                      'pick': Attrs(True, True, False, False),
                      'play': Attrs(True, True, True, False),
                      'score': Attrs(False, False, False, False),
@@ -35,6 +36,7 @@ class CmdParser(object):
         Cmdalias = namedtuple('Cmdalias', 'alias command state')
         self.aliases = [ Cmdalias('pick', 'play', 'wait_answers'),
                          Cmdalias('pick', 'winner', 'wait_czar'),
+                         Cmdalias('players', 'list', 'any'),
                          Cmdalias('shame', 'score', 'any'),
                          Cmdalias('status', 'state', 'any') ]
 
@@ -49,7 +51,7 @@ class CmdParser(object):
         self.command: str = None
 
     def is_command(self) -> bool:
-        word = self.words[0]
+        word = self.get_alias()
         if word in self.cmdattrs:
             if not self.cmdattrs[word].hasargs and len(self.words) > 1:
                 return False
@@ -64,6 +66,7 @@ class CmdParser(object):
                 self.args.append(int(self.words[i]))
 
     def parse(self, msg=None):
+        self.set_recipient(msg)
         if msg.msg is not None:
             self.string = msg.msg
         if not self.is_command():
@@ -107,6 +110,12 @@ class CmdParser(object):
         # now remove those cards from player's hand
         for num in nums:
             self.player.deal(num)
+
+    def set_recipient(self, msg):
+        if msg.source == 'privmsg':
+            self.game.irc.destination = msg.nick
+        else:
+            self.game.irc.destination = self.game.irc.channel
 
 
     #-----------------------------------------------------------------------

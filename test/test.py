@@ -6,6 +6,8 @@
 TODO list:
 * always reply to the cards command by privmsg (possibly covered above)
 * reply to privmsg contacts via privmsg, and pub via pub
+* send privmsg to player after they play their hand for the round showing what
+  they played
 """
 
 import unittest, sys, os, re
@@ -41,6 +43,14 @@ def start_game():
     game.add_player(joe)
     game.add_player(jim)
     return game
+
+
+def run_command(game, command, user=None):
+    p = CmdParser(game)
+    msg = FakeIRCmsg(command, user=user)
+    p.parse(msg)
+    game.command(p)
+
 
 class CardTest(unittest.TestCase):
     def test_card(self):
@@ -261,6 +271,25 @@ class GameTest(unittest.TestCase):
         game.command(p)
         self.assertEqual(9, len(jim.show_hand()))
 
+    def test_winner_announcement(self):
+        config = Config().data
+        game = start_game()
+        pick = game.question.pick
+        cardslist = ' '.join([str(i) for i in range(pick)])
+        run_command(game, f'play {cardslist}', user=game.players[1])
+        run_command(game, f'play {cardslist}', user=game.players[2])
+        run_command(game, 'winner 0', user=game.players[0])
+        annc = config['text']['en']['winner_announcement']
+        if game.players[1].points == 1:
+            winner = game.players[1]
+        else:
+            winner = game.players[2]
+        cards = game.answers[winner]['cards']
+        answer = game.format_answer(cards)
+        annc = annc.format(player=winner.nick, card=answer, points=1)
+        expected = call(annc)
+        self.assertEqual(str(expected), str(cahirc.Cahirc.say.mock_calls[-1]))
+
 
 
 class GamePlayerTest(unittest.TestCase):
@@ -434,7 +463,7 @@ class PlayTest(unittest.TestCase):
         game.add_player(jim)
         game.play(jim, jim.deal(2))
         game.play(joe, joe.deal(1))
-        game.winner(bob, 0)
+        game.winner(bob, [0])
         self.assertEqual(1, game.answer_order[0].points)
 
     def test_selecting_answer_moves_czar(self):
@@ -448,7 +477,7 @@ class PlayTest(unittest.TestCase):
         game.add_player(jim)
         game.play(jim, jim.deal(2))
         game.play(joe, joe.deal(1))
-        game.winner(bob, 0)
+        game.winner(bob, [0])
         self.assertEqual(joe, game.czar)
 
 
@@ -468,7 +497,7 @@ class StatusTest(unittest.TestCase):
     def test_status_wait_players(self):
         text = self.config['text']['en']['status']['wait_players']
         text = text.format(num=2)
-        expected = call('#test', text)
+        expected = call(text)
         game = Game()
         p = CmdParser(game)
         msg = FakeIRCmsg('start')
@@ -482,16 +511,13 @@ class StatusTest(unittest.TestCase):
     def test_status_inactive(self):
         bob = Player('Bob', '~bobbo')
         text = self.config['text']['en']['status']['inactive']
-        expected = call('#test', text)
+        expected = call(text)
         game = Game()
         game.status = 'inactive'
         game.state(bob, [])
         self.assertEqual(str(expected), str(cahirc.Cahirc.say.mock_calls[0]))
 
     def test_status_wait_answers(self):
-        # TODO: update this test so that one of the players has already played.
-        # this will simplify the problem of the non-deterministic playerlist
-        # order
         bob = Player('Bob', '~bobbo')
         jim = Player('Jim', '~jimbo')
         joe = Player('Joe', '~joebo')
@@ -508,10 +534,31 @@ class StatusTest(unittest.TestCase):
         players = gameclass.playerlist_format([joe.nick])
         text = self.config['text']['en']['status']['wait_answers']
         text = text.format(players=players, question=question)
-        expected = call('#test', text)
+        expected = call(text)
         game.state(bob, [])
         self.assertEqual(str(expected), str(cahirc.Cahirc.say.mock_calls[5]),
             msg='This test fails regularly since the order of the player list is not deterministic')
+
+
+class ListCmdTest(unittest.TestCase):
+    def setUp(self):
+        cahirc.Cahirc.say.reset_mock()
+
+    def test_list_command_works(self):
+        config = Config().data
+        game = start_game()
+        player = game.players[1]
+        msg = FakeIRCmsg('list', user=player)
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        playerlist = [player.nick for player in game.players]
+        players = gameclass.playerlist_format(playerlist)
+        annc = config['text']['en']['player_list']
+        annc = annc.format(players=players)
+        expected = call(annc)
+        self.assertEqual(str(expected), str(cahirc.Cahirc.say.mock_calls[-1]))
+
 
 
 class CardsCmdTest(unittest.TestCase):
@@ -533,8 +580,9 @@ class CardsCmdTest(unittest.TestCase):
         for card in hand:
             handstring += '[{}] {} '.format(i, card)
             i += 1
-        expected = call(player.nick, annc.format(cards=handstring))
+        expected = call(annc.format(cards=handstring))
         self.assertIn(str(expected), str(cahirc.Cahirc.say.mock_calls[-1]))
+        self.assertEqual(player.nick, game.irc.destination)
                       
 
     def test_cards_replays_question(self):
@@ -548,7 +596,7 @@ class CardsCmdTest(unittest.TestCase):
         question = game.question.formattedvalue
         annc = config['text']['en']['question_announcement']
         annc = annc.format(card=question) 
-        expected = call(player.nick, annc)
+        expected = call(annc)
         self.assertEqual(str(expected), str(cahirc.Cahirc.say.mock_calls[-2]))
 
 
@@ -563,7 +611,7 @@ class ScoreCmdTest(unittest.TestCase):
         msg = FakeIRCmsg(cmdstring)
         p.parse(msg)
         game.command(p)
-        expected = call('#test', 'This feature is not yet implemented')
+        expected = call('This feature is not yet implemented')
         self.assertEqual(str(expected), str(cahirc.Cahirc.say.mock_calls[0]))
 
 
@@ -713,6 +761,27 @@ class ParserTest(unittest.TestCase):
         self.game.command(self.p)
         self.assertEqual(jimcards, self.game.answers[jim]['cards'])
 
+    def test_aliases_work_at_all(self):
+        bob = Player('Bob', '~bobbo')
+        joe = Player('Joe', '~bobbo')
+        jim = Player('Jim', '~bobbo')
+        self.game.start()
+        self.game.add_player(bob)
+        self.game.add_player(joe)
+        self.game.add_player(jim)
+        config = Config().data
+        player = self.game.players[1]
+        msg = FakeIRCmsg('players', user=player)
+        p = CmdParser(self.game)
+        p.parse(msg)
+        self.game.command(p)
+        playerlist = [player.nick for player in self.game.players]
+        players = gameclass.playerlist_format(playerlist)
+        annc = config['text']['en']['player_list']
+        annc = annc.format(players=players)
+        expected = call(annc)
+        self.assertEqual(str(expected), str(cahirc.Cahirc.say.mock_calls[-1]))
+
 
 class ConfigTest(unittest.TestCase):
     def test_config_exists_at_all(self):
@@ -725,6 +794,9 @@ class ConfigTest(unittest.TestCase):
 
 
 class BasicIRCTest(unittest.TestCase):
+    def setUp(self):
+        cahirc.Cahirc.say.reset_mock()
+
     def test_irc_msg_obj(self):
         game = Game()
         bob = Player('Bob', '~bobbo')
@@ -737,6 +809,22 @@ class BasicIRCTest(unittest.TestCase):
 
     # TODO: test for a privmsg getting a privmsg in return, and a pubmsg
     # getting a pubmsg in return
+
+    def test_status_in_private(self):
+        config = Config().data
+        game = start_game()
+        player1 = game.players[1]
+        player2 = game.players[2]
+        p = CmdParser(game)
+        msg = FakeIRCmsg('play 1', user=player1)
+        p.parse(msg)
+        game.command(p)
+        msg = FakeIRCmsg('status', user=player2, source='privmsg')
+        p.parse(msg)
+        game.command(p)
+        question = game.question.formattedvalue
+        players = gameclass.playerlist_format([player2.nick])
+        self.assertEqual(player2.nick, game.irc.destination)
 
 
 class GameIRCTest(unittest.TestCase):
@@ -753,7 +841,7 @@ class GameIRCTest(unittest.TestCase):
         msg = FakeIRCmsg('start')
         p.parse(msg)
         game.command(p)
-        cahirc.Cahirc.say.assert_called_with(chan, text)
+        cahirc.Cahirc.say.assert_called_with(text)
 
     def test_game_start_says_game_start(self):
         config = Config()
@@ -853,8 +941,6 @@ class GameIRCTest(unittest.TestCase):
             str(cahirc.Cahirc.say.mock_calls[2])))
 
     def test_joe_gets_cards(self):
-        cahirc.Cahirc.say.reset_mock()
-        config = Config().data
         game = Game()
         bob = Player('Bob', '~bobbo')
         joe = Player('Joe', '~bobbo')
@@ -867,7 +953,6 @@ class GameIRCTest(unittest.TestCase):
             str(cahirc.Cahirc.say.mock_calls[3])))
 
     def test_candidates_are_announced(self):
-        cahirc.Cahirc.say.reset_mock()
         config = Config().data
         game = Game()
         bob = Player('Bob', '~bobbo')
@@ -906,13 +991,22 @@ class GameIRCTest(unittest.TestCase):
         self.assertTrue(re.search(config['text']['en']['round_start'],
             str(cahirc.Cahirc.say.mock_calls[0])))
         round_annc = config['text']['en']['round_announcement'].format(round_num=1, czar='Bob')
-        round_call = call('#test', round_annc)
+        round_call = call(round_annc)
         self.assertEqual(str(round_call),
             str(cahirc.Cahirc.say.mock_calls[1]))
 
 
-    def test_receive_irc(self):
+    def test_answer_is_privmsgd(self):
         game = Game()
+        bob = Player('Bob', '~bobbo')
+        joe = Player('Joe', '~bobbo')
+        jim = Player('Jim', '~bobbo')
+        game.start()
+        game.add_player(bob)
+        game.add_player(joe)
+        game.add_player(jim)
+        # now have a player submit their answer, and check that the response
+        # comes by privmsg
 
 
 
@@ -941,7 +1035,7 @@ class ResponseTest(unittest.TestCase):
         expected_answer = 'TEST is TEST'
         game.play(joe, answer_card)
         game.play(jim, answer_card)
-        self.assertEqual(f"call('#test', '{expected_answer}')",
+        self.assertEqual(f"call('{expected_answer}')",
             str(cahirc.Cahirc.say.mock_calls[-1]))
 
     def test_winner_is_announced(self):
@@ -962,28 +1056,13 @@ class ResponseTest(unittest.TestCase):
         # winner() takes a player as an argument, because all commands
         # do.  that player is discarded, though, since the winner
         # command only really cares about the choice number.
-        game.winner(bob, 0)
+        game.winner(bob, [0])
         winner = game.answer_order[0]
         expected_answer = text.format(player=winner.nick,
             card=f'{winner.nick.upper()} is TEST', points=1)
-        self.assertEqual(f"call('#test', '{expected_answer}')",
+        self.assertEqual(f"call('{expected_answer}')",
             str(cahirc.Cahirc.say.mock_calls[-1]))
 
-    def test_card_list_is_private(self):
-        """
-        make sure that the list of cards sent back to the user when the
-        game starts is sent by privmsg instead of to the whole channel.
-        """
-        config = Config().data
-        cahirc.Cahirc.say.reset_mock()
-        game = start_game()
-        calls = []
-        for player in game.players[1:3]:
-            hand = player.show_hand()
-            annc = config['text']['en']['player_hand'].format(cards='')
-            calls.append(f"call('{player.nick}")
-        for call in calls:
-            self.assertIn(call, str(cahirc.Cahirc.say.mock_calls[-2:]))
 
 
 if __name__ == '__main__':
