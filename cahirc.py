@@ -23,6 +23,7 @@ class Cahirc(irc.bot.SingleServerIRCBot):
         port = config['port']
         super().__init__([(server, port)], nickname, nickname)
         self.channel = config['default_channel']
+        self.destination = self.channel
 
     #------------------------------------------------------------
     # IRC bot functions
@@ -52,10 +53,10 @@ class Cahirc(irc.bot.SingleServerIRCBot):
     # CAH specific functions
     #------------------------------------------------------------
 
-    def say(self, recipient, text):
+    def say(self, text):
         """ recipient is either the channel name, or the nick for a privmsg """
         logger.debug(f'Sending to {recipient}: {text}')
-        self.connection.privmsg(recipient, text)
+        self.connection.privmsg(self.destination, text)
 
 
 class IRCmsg(object):
@@ -75,9 +76,10 @@ class FakeIRCmsg(IRCmsg):
     """ only used for testing.  it can take either a well formed user string
     (see default user argument) or a Player object.  poorly formed strings will
     cause problems, so don't do that. """
-    def __init__(self, string, user='Bob!~bobbo@127.0.0.1'):
+    def __init__(self, string, user='Bob!~bobbo@127.0.0.1', source='pubmsg'):
         if isinstance(user, Player):
             user = '{}!{}@127.0.0.1'.format(user.nick, user.user)
         mask = NickMask(user)
-        event = Event('privmsg', mask, '#test', [string])
+        source = '#test' if source == 'pubmsg' else mask.nick
+        event = Event('privmsg', mask, source, [string])
         super().__init__(event)

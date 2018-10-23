@@ -37,16 +37,25 @@ class Game(object):
         """ show a player's hand """
         annc = self.config['text'][self.lang]['question_announcement']
         annc = annc.format(card=self.question.formattedvalue)
-        self.irc.say(player.nick, annc)
+        self.irc.destination = player.nick
+        self.irc.say(annc)
         self.show_hand(player)
 
     def join(self, player, args):
         """ add a new player to the game """
         if player in self.players:
-            self.irc.say(self.channel,
-                self.config['text'][self.lang]['double_join'])
+            self.irc.say(self.config['text'][self.lang]['double_join'])
         else:
             self.add_player(player)
+
+    def list(self, player, cards):
+        """ list players currently in the game """
+        playerlist = [player.nick for player in self.players]
+        players = playerlist_format(playerlist)
+        annc = self.config['text']['en']['player_list']
+        annc = annc.format(players=players)
+        self.irc.say(annc)
+ 
 
     def play(self, player, cards):
         """ cards is an array of Card objects """
@@ -66,7 +75,7 @@ class Game(object):
 
     def score(self, player: Player=None, args: List=None) -> None:
         """ report the current score """
-        self.irc.say(self.channel, 'This feature is not yet implemented')
+        self.irc.say('This feature is not yet implemented')
 
     def start(self, player: Player=None, args: List=None) -> None:
         # args are not used in this function
@@ -76,17 +85,16 @@ class Game(object):
         self.load_cards()
         self.deck.shuffle()
         text = self.config['text'][self.lang]['round_start']
-        self.irc.say(self.channel, text)
+        self.irc.say(text)
 
     def state(self, player, args):
         """ report current game state """
         if self.status == 'inactive':
-            self.irc.say(self.channel,
-                self.config['text'][self.lang]['status']['inactive'])
+            self.irc.say(self.config['text'][self.lang]['status']['inactive'])
         elif self.status == 'wait_players':
             msg = self.config['text'][self.lang]['status']['wait_players']
             msg = msg.format(num=self.config['min_players']-len(self.players))
-            self.irc.say(self.channel, msg)
+            self.irc.say(msg)
         elif self.status == 'wait_answers':
             all_players = set([player.nick for player in self.players]) 
             played = set([player.nick for player in self.answers])
@@ -97,11 +105,12 @@ class Game(object):
             question = self.question.formattedvalue
             msg = self.config['text'][self.lang]['status']['wait_answers']
             msg = msg.format(players=players, question=question)
-            self.irc.say(self.channel, msg)
+            self.irc.say(msg)
 
-    def winner(self, player:Player, answer_num):
+    def winner(self, player:Player, args):
         """ record the winner of the round """
         # player is the player who made the call; ignore
+        answer_num = args[0]
         person = self.answer_order[answer_num]
         person.record_win()
         self.announce_winner(person)
@@ -143,8 +152,8 @@ class Game(object):
         round_annc = round_annc.format(round_num=self.round_num,
             czar=self.czar.nick)
         card_annc = self.config['text'][self.lang]['question_announcement']
-        self.irc.say(self.channel, round_annc)
-        self.irc.say(self.channel, card_annc.format(card=q_text))
+        self.irc.say(round_annc)
+        self.irc.say(card_annc.format(card=q_text))
         self.show_hands()
 
     def load_cards(self):
@@ -175,20 +184,23 @@ class Game(object):
         text = text.format(player=player.nick,
             card=self.format_answer(self.answers[player]['cards']),
             points=player.points)
-        self.irc.say(self.channel, text)
+        self.irc.say(text)
 
     def announce_answers(self):
         annc = self.config['text'][self.lang]['all_cards_played']
-        self.irc.say(self.channel, annc)
+        self.irc.say(annc)
         players = self.randomize_answers()
         for player in players:
             cards = self.answers[player]['cards']
-            self.irc.say(self.channel, self.format_answer(cards))
+            self.irc.say(self.format_answer(cards))
  
     def format_answer(self, cards):
         # TODO: add extra {}s on the end to add up to the PICK number
         text = re.sub('%s', '{}', self.question.value)
-        answers = [card.value for card in cards]
+        if isinstance(cards[0], Card):
+            answers = [card.value for card in cards]
+        else:
+            answers = cards
         try:
             text = text.format(*answers)
         except IndexError as err:
@@ -221,7 +233,8 @@ class Game(object):
         for card in hand:
             handstring += '[{}] {} '.format(i, card)
             i += 1
-        self.irc.say(player.nick, annc.format(cards=handstring))
+        self.irc.destination = player.nick
+        self.irc.say(annc.format(cards=handstring))
 
 
     #-----------------------------------------------------------------

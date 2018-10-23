@@ -29,6 +29,7 @@ text:
     question_announcement: "Card: {card}"
     round_announcement: "Round {round_num}! {czar} is the card czar"
     round_start: "A new game is starting! Type join to get in."
+    score_announcement: "The most horrible people: {scores}"
     status_announcement: "Status: {czar} is the czar. Waiting for {players} to play."
     winner_announcement: "Winner is: {player} with \"{card}\"  {player} gets one point, and now has {points} points"
     status:
