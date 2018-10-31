@@ -48,10 +48,10 @@ class CmdParser(object):
         self.game = game
         self.ircmsg = None
         self._string = None
-        self.player: Player = None
-        self.words: List[str] = []
-        self.args: List[int] = []
-        self.command: str = None
+        self.player = None
+        self.words = []
+        self.args = []
+        self.command = None
 
     def is_command(self) -> bool:
         word = self.get_alias()
