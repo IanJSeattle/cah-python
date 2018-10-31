@@ -33,7 +33,7 @@ class Game(object):
     # commands
     #-----------------------------------------------------------------
 
-    def cards(self, player: Player=None, args: List=None) -> None:
+    def cards(self, player: Player=None, args=None) -> None:
         """ show a player's hand """
         self.irc.destination = player.nick
         if self.status in ['inactive', 'wait_players']:
@@ -78,11 +78,11 @@ class Game(object):
             self.status = 'wait_czar'
             self.announce_answers()
 
-    def score(self, player: Player=None, args: List=None) -> None:
+    def score(self, player: Player=None, args=None) -> None:
         """ report the current score """
         self.irc.say('This feature is not yet implemented')
 
-    def start(self, player: Player=None, args: List=None) -> None:
+    def start(self, player: Player=None, args=None) -> None:
         # args are not used in this function
         self.status = 'wait_players'
         if player is not None:
