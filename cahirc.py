@@ -55,7 +55,7 @@ class Cahirc(irc.bot.SingleServerIRCBot):
 
     def say(self, text):
         """ recipient is either the channel name, or the nick for a privmsg """
-        logger.debug(f'Sending to {recipient}: {text}')
+        logger.debug(f'Sending to {self.destination}: {text}')
         self.connection.privmsg(self.destination, text)
 
 

@@ -33,9 +33,12 @@ class CmdParser(object):
                      'winner': Attrs(True, True, False, False),
                      }
 
+        # order is important.  aliases will be evaluated in order.
+        # 'pick' aliases to 'play' most of the time so that the play()
+        # function can deal with out of bound conditions
         Cmdalias = namedtuple('Cmdalias', 'alias command state')
-        self.aliases = [ Cmdalias('pick', 'play', 'wait_answers'),
-                         Cmdalias('pick', 'winner', 'wait_czar'),
+        self.aliases = [ Cmdalias('pick', 'winner', 'wait_czar'),
+                         Cmdalias('pick', 'play', 'any'),
                          Cmdalias('players', 'list', 'any'),
                          Cmdalias('shame', 'score', 'any'),
                          Cmdalias('status', 'state', 'any') ]

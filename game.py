@@ -35,9 +35,12 @@ class Game(object):
 
     def cards(self, player: Player=None, args: List=None) -> None:
         """ show a player's hand """
+        self.irc.destination = player.nick
+        if self.status in ['inactive', 'wait_players']:
+            self.irc.say(self.config['text'][self.lang]['game_not_started'])
+            return
         annc = self.config['text'][self.lang]['question_announcement']
         annc = annc.format(card=self.question.formattedvalue)
-        self.irc.destination = player.nick
         self.irc.say(annc)
         self.show_hand(player)
 
@@ -59,6 +62,8 @@ class Game(object):
 
     def play(self, player, cards):
         """ cards is an array of Card objects """
+        if self.status != 'wait_answers':
+            return
         if player == self.czar:
             raise NotPermitted('czar may not play')
         if player not in self.answers:
@@ -169,6 +174,7 @@ class Game(object):
     def command(self, parser):
         if parser.command is None:
             return
+        #import pdb; pdb.set_trace()
         func = getattr(self, parser.command)
         func(parser.player, parser.args)
 
