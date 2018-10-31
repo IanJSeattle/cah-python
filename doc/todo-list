@@ -1,3 +1,9 @@
-add note when a player joins the game, something like "welcome {playername}, waiting for {num} more players before starting"
+# vi: set wm=9:
+
+add note when a player joins the game, something like "welcome
+{playername}, waiting for {num} more players before starting"
+
+double "start" command announces a new game is starting again.  fix start
+so it won't respond or gives an error if there's already a game underway.
 
 
