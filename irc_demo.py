@@ -84,7 +84,8 @@ def main():
     channel = sys.argv[2]
     nickname = sys.argv[3]
 
-    print(f'ircbot({channel}, {nickname}, {server}, {port})')
+    #print(f'ircbot({channel}, {nickname}, {server}, {port})')
+    print('ircbot({}, {}, {}, {})'.format(channel, nickname, server, port))
     bot = IRCBot(channel, nickname, server, port)
     bot.start()
 

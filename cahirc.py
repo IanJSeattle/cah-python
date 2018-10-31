@@ -36,11 +36,14 @@ class Cahirc(irc.bot.SingleServerIRCBot):
     def on_nicknameinuse(self, connection, event):
         nick = connetion.get_nickname()
         newnick = nick + '_'
-        logger.info(f'Nickname "{nick}" already in use, trying "{newnick}"')
+        #logger.info(f'Nickname "{nick}" already in use, trying "{newnick}"')
+        logger.info('Nickname "{}" already in use, trying "{}"'
+                    .format(nick, newnick))
         connection.nick(newnick)
 
     def on_welcome(self, connection, event):
-        logger.info(f'Joining {self.channel}')
+        #logger.info(f'Joining {self.channel}')
+        logger.info('Joining {}'.format(self.channel))
         connection.join(self.channel)
 
     def on_privmsg(self, connection, event):
@@ -55,7 +58,8 @@ class Cahirc(irc.bot.SingleServerIRCBot):
 
     def say(self, text):
         """ recipient is either the channel name, or the nick for a privmsg """
-        logger.debug(f'Sending to {self.destination}: {text}')
+        #logger.debug(f'Sending to {self.destination}: {text}')
+        logger.debug('Sending to {}: {}'.format(self.destination, text))
         self.connection.privmsg(self.destination, text)
 
 
@@ -66,7 +70,9 @@ class IRCmsg(object):
         self.user = event.source.user
         self.msg = event.arguments[0]
         self.source = event.type
-        logger.debug(f'Got {self.source} from {self.nick}: {self.msg}')
+        #logger.debug(f'Got {self.source} from {self.nick}: {self.msg}')
+        logger.debug('Got {} from {}: {}'.format(self.source, self.nick, 
+                                                 self.msg))
 
     def make_player(self):
         return Player(self.nick, self.user)
