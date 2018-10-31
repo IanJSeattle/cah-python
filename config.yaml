@@ -26,6 +26,7 @@ text:
     player_list: "Players currently in the game: {players}"
     player_hand: "Your cards are: {cards}"
     player_played: "You played: {card}"
+    game_not_started: "Game hasn't started yet"
     question_announcement: "Card: {card}"
     round_announcement: "Round {round_num}! {czar} is the card czar"
     round_start: "A new game is starting! Type join to get in."
