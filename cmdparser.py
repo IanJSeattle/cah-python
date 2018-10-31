@@ -2,7 +2,7 @@
 
 import re
 from collections import namedtuple
-from typing import List
+#from typing import List
 import game
 from player import Player
 import cahirc as irc
