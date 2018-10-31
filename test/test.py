@@ -290,6 +290,22 @@ class GameTest(unittest.TestCase):
         expected = call(annc)
         self.assertEqual(str(expected), str(cahirc.Cahirc.say.mock_calls[-1]))
 
+    def test_start_cant_be_run_twice(self):
+        text = Config().data['text']['en']
+        game = Game()
+        bob = Player('Bob', '~bobbo')
+        joe = Player('Joe', '~joebo')
+        jim = Player('Jim', '~jimbo')
+        run_command(game, 'start', user=bob)
+        self.assertEqual('wait_players', game.status)
+        run_command(game, 'join', user=joe);
+        run_command(game, 'join', user=jim);
+        self.assertEqual('wait_answers', game.status)
+        run_command(game, 'start', user=bob)
+        self.assertEqual('wait_answers', game.status)
+        self.assertNotEqual("call('{}')".format(text['round_start']), 
+                            str(cahirc.Cahirc.say.mock_calls[-1]))
+
 
 
 class GamePlayerTest(unittest.TestCase):
