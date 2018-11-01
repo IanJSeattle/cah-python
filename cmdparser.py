@@ -86,7 +86,9 @@ class CmdParser(object):
             if self.args == [] and self.cmdattrs[self.command].required:
                 self.command = None
                 return
-        if registered and self.cmdattrs[self.command].cardargs == True:
+        if self.game.status != 'wait_answers':
+            return
+        elif registered and self.cmdattrs[self.command].cardargs == True:
             self.play_cards()
 
     def get_alias(self) -> str:
@@ -106,7 +108,6 @@ class CmdParser(object):
                 card = self.player.show_hand()[arg]
             except IndexError:
                 pass
-                #import pdb; pdb.set_trace()
             cardargs.append(card)
         # "deal" the cards out to the parser
         self.args = cardargs

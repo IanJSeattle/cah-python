@@ -690,6 +690,7 @@ class ParserTest(unittest.TestCase):
         self.game.load_cards()
         self.game.deck.shuffle()
         self.game.deal_all_players(10)
+        self.game.status = 'wait_answers'
         cmdstring = 'play 3 4 5'
         msg = FakeIRCmsg(cmdstring, user=bob)
         self.p.parse(msg)
@@ -1046,7 +1047,6 @@ class GameIRCTest(unittest.TestCase):
         self.assertEqual(str(round_call),
             str(cahirc.Cahirc.say.mock_calls[4]))
 
-
     def test_answer_is_privmsgd(self):
         game = Game()
         bob = Player('Bob', '~bobbo')
@@ -1063,6 +1063,16 @@ class GameIRCTest(unittest.TestCase):
         p.parse(msg)
         game.command(p)
         self.assertEqual('Joe', game.irc.destination)
+
+    def test_early_play_is_ignored(self):
+        game = Game()
+        bob = Player('Bob', '~bobbo')
+        run_command(game, 'start', user=bob)
+        run_command(game, 'play 1', user=bob)
+        text = Config().data['text']['en']['round_start']
+        self.assertEqual('call("{}")'.format(text), 
+                         str(cahirc.Cahirc.say.mock_calls[-1]))
+
 
 
 
