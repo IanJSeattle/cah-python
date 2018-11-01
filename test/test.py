@@ -257,6 +257,7 @@ class GameTest(unittest.TestCase):
         self.assertEqual('wait_players', game.status)
 
     def test_commander_runs_play_command(self):
+        hand_size = Config().data['hand_size']
         game = Game()
         p = CmdParser(game)
         bob = Player('Bob', '~bobbo')
@@ -269,7 +270,7 @@ class GameTest(unittest.TestCase):
         game.add_player(joe)
         p.parse(msg)
         game.command(p)
-        self.assertEqual(9, len(jim.show_hand()))
+        self.assertEqual(hand_size - 1, len(jim.show_hand()))
 
     def test_winner_announcement(self):
         config = Config().data
@@ -303,8 +304,18 @@ class GameTest(unittest.TestCase):
         self.assertEqual('wait_answers', game.status)
         run_command(game, 'start', user=bob)
         self.assertEqual('wait_answers', game.status)
-        self.assertNotEqual("call('{}')".format(text['round_start']), 
+        self.assertEqual("call('{}')".format(text['game_already_started']), 
                             str(cahirc.Cahirc.say.mock_calls[-1]))
+
+    def test_join_gives_a_message(self):
+        text = Config().data['text']['en']['welcome_wait']
+        text = text.format(name='Bob', num='2', player_word='players')
+        game = Game()
+        bob = Player('Bob', '~bobbo')
+        run_command(game, 'join', user=bob)
+        self.assertEqual("call('{}')".format(text), 
+                         str(cahirc.Cahirc.say.mock_calls[-1])
+                         .format(name='Bob', num='2', player_word='players'))
 
 
 
@@ -522,7 +533,7 @@ class StatusTest(unittest.TestCase):
         msg = FakeIRCmsg('status')
         p.parse(msg)
         game.command(p)
-        self.assertEqual(expected, cahirc.Cahirc.say.mock_calls[1])
+        self.assertEqual(expected, cahirc.Cahirc.say.mock_calls[2])
 
     def test_status_inactive(self):
         bob = Player('Bob', '~bobbo')
@@ -552,7 +563,7 @@ class StatusTest(unittest.TestCase):
         text = text.format(players=players, question=question)
         expected = call(text)
         game.state(bob, [])
-        self.assertEqual(str(expected), str(cahirc.Cahirc.say.mock_calls[5]),
+        self.assertEqual(str(expected), str(cahirc.Cahirc.say.mock_calls[-1]),
             msg='This test fails regularly since the order of the player list is not deterministic')
 
 
@@ -871,7 +882,7 @@ class GameIRCTest(unittest.TestCase):
     def setUp(self):
         cahirc.Cahirc.say.reset_mock()
 
-    def test_game_start_says_game_start(self):
+    def test_game_start_text_says_game_start(self):
         config = Config()
         chan = config.data['default_channel']
         text = config.data['text']['en']['round_start']
@@ -891,7 +902,7 @@ class GameIRCTest(unittest.TestCase):
         msg = FakeIRCmsg('start')
         p.parse(msg)
         game.command(p)
-        self.assertEqual(1, len(cahirc.Cahirc.say.mock_calls))
+        self.assertEqual(2, len(cahirc.Cahirc.say.mock_calls))
 
     def test_game_start_joining_works(self):
         game = Game()
@@ -945,7 +956,7 @@ class GameIRCTest(unittest.TestCase):
         game.command(p)
         config = Config()
         self.assertTrue(re.search(config.data['text']['en']['double_join'],
-            str(cahirc.Cahirc.say.mock_calls[1])))
+            str(cahirc.Cahirc.say.mock_calls[-1])))
 
     def test_game_three_join_starts(self):
         game = Game()
@@ -978,7 +989,7 @@ class GameIRCTest(unittest.TestCase):
         game.add_player(joe)
         game.add_player(jim)
         self.assertTrue(re.search('Card: ',
-            str(cahirc.Cahirc.say.mock_calls[2])))
+            str(cahirc.Cahirc.say.mock_calls[5])))
 
     def test_joe_gets_cards(self):
         game = Game()
@@ -990,7 +1001,7 @@ class GameIRCTest(unittest.TestCase):
         game.add_player(joe)
         game.add_player(jim)
         self.assertTrue(re.search('Your cards are: ',
-            str(cahirc.Cahirc.say.mock_calls[3])))
+            str(cahirc.Cahirc.say.mock_calls[6])))
 
     def test_candidates_are_announced(self):
         config = Config().data
@@ -1006,7 +1017,7 @@ class GameIRCTest(unittest.TestCase):
         game.play(jim, jim.deal(1))
         played_annc = config['text']['en']['all_cards_played']
         self.assertTrue(re.search(played_annc,
-            str(cahirc.Cahirc.say.mock_calls[5])))
+            str(cahirc.Cahirc.say.mock_calls[8])))
 
     def test_irc_game(self):
         config = Config().data
@@ -1020,20 +1031,20 @@ class GameIRCTest(unittest.TestCase):
         msg = FakeIRCmsg('start', user=bob)
         p.parse(msg)
         game.command(p)
-        self.assertEqual(1, len(cahirc.Cahirc.say.mock_calls))
+        self.assertEqual(2, len(cahirc.Cahirc.say.mock_calls))
         msg = FakeIRCmsg('join', user=jim)
         p.parse(msg)
         game.command(p)
-        self.assertEqual(1, len(cahirc.Cahirc.say.mock_calls))
+        self.assertEqual(3, len(cahirc.Cahirc.say.mock_calls))
         msg = FakeIRCmsg('join', user=joe)
         p.parse(msg)
         game.command(p)
         self.assertTrue(re.search(config['text']['en']['round_start'],
-            str(cahirc.Cahirc.say.mock_calls[0])))
+            str(cahirc.Cahirc.say.mock_calls[1])))
         round_annc = config['text']['en']['round_announcement'].format(round_num=1, czar='Bob')
         round_call = call(round_annc)
         self.assertEqual(str(round_call),
-            str(cahirc.Cahirc.say.mock_calls[1]))
+            str(cahirc.Cahirc.say.mock_calls[4]))
 
 
     def test_answer_is_privmsgd(self):
@@ -1060,9 +1071,9 @@ class ResponseTest(unittest.TestCase):
         cahirc.Cahirc.say.reset_mock()
         game = start_game()
         self.assertTrue(re.search("Round 1!",
-            str(cahirc.Cahirc.say.mock_calls[1])))
+            str(cahirc.Cahirc.say.mock_calls[4])))
         self.assertTrue(re.search("Bob is the card czar",
-            str(cahirc.Cahirc.say.mock_calls[1])))
+            str(cahirc.Cahirc.say.mock_calls[4])))
 
     def test_answers_are_displayed(self):
         cahirc.Cahirc.say.reset_mock()
