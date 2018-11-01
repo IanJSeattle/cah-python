@@ -885,7 +885,6 @@ class GameIRCTest(unittest.TestCase):
 
     def test_game_start_text_says_game_start(self):
         config = Config()
-        chan = config.data['default_channel']
         text = config.data['text']['en']['round_start']
         game = Game()
         bob = Player('Bob', '~bobbo')
@@ -893,7 +892,8 @@ class GameIRCTest(unittest.TestCase):
         msg = FakeIRCmsg('start')
         p.parse(msg)
         game.command(p)
-        cahirc.Cahirc.say.assert_called_with(text)
+        self.assertEqual('call("{}")'.format(text),
+                         str(cahirc.Cahirc.say.mock_calls[0]))
 
     def test_game_start_says_game_start(self):
         config = Config()
@@ -1041,7 +1041,7 @@ class GameIRCTest(unittest.TestCase):
         p.parse(msg)
         game.command(p)
         self.assertTrue(re.search(config['text']['en']['round_start'],
-            str(cahirc.Cahirc.say.mock_calls[1])))
+            str(cahirc.Cahirc.say.mock_calls[0])))
         round_annc = config['text']['en']['round_announcement'].format(round_num=1, czar='Bob')
         round_call = call(round_annc)
         self.assertEqual(str(round_call),
@@ -1071,7 +1071,7 @@ class GameIRCTest(unittest.TestCase):
         run_command(game, 'play 1', user=bob)
         text = Config().data['text']['en']['round_start']
         self.assertEqual('call("{}")'.format(text), 
-                         str(cahirc.Cahirc.say.mock_calls[-1]))
+                         str(cahirc.Cahirc.say.mock_calls[-2]))
 
 
 
