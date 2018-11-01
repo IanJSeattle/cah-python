@@ -89,11 +89,11 @@ class Game(object):
             self.irc.say(text['game_already_started'])
             return
         self.status = 'wait_players'
+        self.irc.say(text['round_start'])
         if player is not None:
             self.add_player(player)
         self.load_cards()
         self.deck.shuffle()
-        self.irc.say(text['round_start'])
 
     def state(self, player, args):
         """ report current game state """
