@@ -646,7 +646,7 @@ class ScoreCmdTest(unittest.TestCase):
     def setUp(self):
         cahirc.Cahirc.say.reset_mock()
 
-    def test_score_reports_not_impl(self):
+    def ignore_score_reports_not_impl(self):
         game = Game()
         p = CmdParser(game)
         cmdstring = 'score'
@@ -655,6 +655,21 @@ class ScoreCmdTest(unittest.TestCase):
         game.command(p)
         expected = call('This feature is not yet implemented')
         self.assertEqual(str(expected), str(cahirc.Cahirc.say.mock_calls[0]))
+
+    def test_score_works(self):
+        config = Config().data
+        game = start_game()
+        pick = game.question.pick
+        cardslist = ' '.join([str(i) for i in range(pick)])
+        run_command(game, f'play {cardslist}', user=game.players[1])
+        run_command(game, f'play {cardslist}', user=game.players[2])
+        run_command(game, 'winner 0', user=game.players[0])
+        run_command(game, 'score', user=game.players[1])
+        scores = game.score_list()
+        annc = config['text']['en']['score_announcement']
+        annc = annc.format(scores=scores)
+        expected = call(annc)
+        self.assertEqual(str(expected), str(cahirc.Cahirc.say.mock_calls[-1]))
 
 
 class ParserTest(unittest.TestCase):
