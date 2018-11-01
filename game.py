@@ -84,13 +84,16 @@ class Game(object):
 
     def start(self, player: Player=None, args=None) -> None:
         # args are not used in this function
+        text = self.config['text'][self.lang]
+        if self.status != 'inactive':
+            self.irc.say(text['game_already_started'])
+            return
         self.status = 'wait_players'
         if player is not None:
             self.add_player(player)
         self.load_cards()
         self.deck.shuffle()
-        text = self.config['text'][self.lang]['round_start']
-        self.irc.say(text)
+        self.irc.say(text['round_start'])
 
     def state(self, player, args):
         """ report current game state """
@@ -125,13 +128,24 @@ class Game(object):
     # methods
     #-----------------------------------------------------------------
 
+    # guaranteed not to get a duplicate player
     def add_player(self, player):
         if player not in self.players:
             self.players.append(player)
         players = len(self.players)
         min_players = self.config['min_players']
         if players >= min_players and self.status == 'wait_players':
+            text = self.config['text'][self.lang]['welcome_start']
+            text = text.format(name=player.nick)
+            self.irc.say(text)
             self.commence()
+        else:
+            text = self.config['text'][self.lang]['welcome_wait']
+            num = min_players - players
+            player_word = 'players' if num > 1 else 'player'
+            text = text.format(name=player.nick, num=num, 
+                               player_word=player_word)
+            self.irc.say(text)
 
     def get_player(self, nick: str) -> Player:
         for player in self.players:
