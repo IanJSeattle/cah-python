@@ -30,6 +30,7 @@ text:
     game_not_started: "Game hasn't started yet"
     game_already_started: "Game has already been started"
     question_announcement: "Card: {card}"
+    quit_message: "{player} has left the game"
     round_announcement: "Round {round_num}! {czar} is the card czar"
     round_start: "A new game is starting! Type 'join' to get in."
     score_announcement: "The most horrible people: {scores}"
