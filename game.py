@@ -80,6 +80,8 @@ class Game(object):
 
     def score(self, player: Player=None, args=None) -> None:
         """ report the current score """
+        if self.status == 'inactive':
+            return
         scores = self.score_list()
         text = self.config['text'][self.lang]['score_announcement']
         text = text.format(scores=scores)

@@ -646,16 +646,6 @@ class ScoreCmdTest(unittest.TestCase):
     def setUp(self):
         cahirc.Cahirc.say.reset_mock()
 
-    def ignore_score_reports_not_impl(self):
-        game = Game()
-        p = CmdParser(game)
-        cmdstring = 'score'
-        msg = FakeIRCmsg(cmdstring)
-        p.parse(msg)
-        game.command(p)
-        expected = call('This feature is not yet implemented')
-        self.assertEqual(str(expected), str(cahirc.Cahirc.say.mock_calls[0]))
-
     def test_score_works(self):
         config = Config().data
         game = start_game()
@@ -690,6 +680,12 @@ class ScoreCmdTest(unittest.TestCase):
                               point_word=point_word(pl.points))
                               for pl in game.players]
         self.assertEqual(', '.join(string), game.score_list())
+
+    def test_score_ignored_when_inactive(self):
+        game = Game()
+        bob = Player('Bob', '~bobbo')
+        run_command(game, 'score', user=bob)
+        cahirc.Cahirc.say.assert_not_called()
             
 
 
