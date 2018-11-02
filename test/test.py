@@ -317,6 +317,20 @@ class GameTest(unittest.TestCase):
                          str(cahirc.Cahirc.say.mock_calls[-1])
                          .format(name='Bob', num='2', player_word='players'))
 
+    def test_quit_quits(self):
+        game = start_game()
+        bob = game.players[0]
+        run_command(game, 'quit', user=bob)
+        self.assertEqual(2, len(game.players))
+
+    def test_quit_quits_correct_player(self):
+        game = start_game()
+        bob = game.players[0]
+        prev_players = game.players
+        run_command(game, 'quit', user=bob)
+        self.assertEqual(prev_players[1], game.players[0])
+        self.assertEqual(prev_players[2], game.players[1])
+
 
 
 class GamePlayerTest(unittest.TestCase):
