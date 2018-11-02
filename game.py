@@ -80,7 +80,10 @@ class Game(object):
 
     def score(self, player: Player=None, args=None) -> None:
         """ report the current score """
-        self.irc.say('This feature is not yet implemented')
+        scores = self.score_list()
+        text = self.config['text'][self.lang]['score_announcement']
+        text = text.format(scores=scores)
+        self.irc.say(text)
 
     def start(self, player: Player=None, args=None) -> None:
         # args are not used in this function
@@ -255,6 +258,17 @@ class Game(object):
             i += 1
         self.irc.destination = player.nick
         self.irc.say(annc.format(cards=handstring))
+
+    def score_list(self):
+        max_points = self.config['max_points']
+        text = self.config['text'][self.lang]['score_element']
+        def point_word(points):
+            return 'point' if points == 1 else 'points'
+        score_order = [text.format(player=pl.nick, points=pl.points,
+                       point_word=point_word(pl.points)) for pl in 
+                       sorted(self.players, key=lambda p: max_points -
+                       p.points)]
+        return ', '.join(score_order)
 
 
     #-----------------------------------------------------------------
