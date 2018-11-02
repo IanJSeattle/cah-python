@@ -21,3 +21,12 @@ add a 'reload' command to reload cards
 
 deal with the game-winning scenario (ie, announce a win when one player
 gets to config['max_points'])
+
+print index numbers for judge choices once all the cards are in
+
+status command should print out card choices in wait_czar
+
+non-czar shouldn't be able to pick a winner
+
+once a winner is picked, maybe try running round 2 (tied to endgame
+code, problably)
