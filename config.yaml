@@ -8,6 +8,7 @@ logfile: cah.log
 min_players: 3
 max_players: 10
 hand_size: 10
+max_points: 10 # number of points needed to win a round
 
 # IRC information
 default_channel: "#test"
@@ -32,6 +33,7 @@ text:
     round_announcement: "Round {round_num}! {czar} is the card czar"
     round_start: "A new game is starting! Type 'join' to get in."
     score_announcement: "The most horrible people: {scores}"
+    score_element: "{player} with {points} {point_word}"
     status_announcement: "Status: {czar} is the czar. Waiting for {players} to play."
     winner_announcement: "Winner is: {player} with \"{card}\"  {player} gets one point, and now has {points} points"
     welcome_wait: "Welcome {name}! Waiting for {num} more {player_word} before starting"

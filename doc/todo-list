@@ -13,3 +13,6 @@ add a 'reload' command to reload cards
 implement the 'shame' command
 
 add a 'leave'/'quit' command so a player can leave the game
+
+deal with the game-winning scenario (ie, announce a win when one player
+gets to config['max_points'])

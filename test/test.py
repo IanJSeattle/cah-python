@@ -671,6 +671,27 @@ class ScoreCmdTest(unittest.TestCase):
         expected = call(annc)
         self.assertEqual(str(expected), str(cahirc.Cahirc.say.mock_calls[-1]))
 
+    def test_score_list_works(self):
+        text = Config().data['text']['en']['score_element']
+        game = Game()
+        bob = Player('Bob', '~bobbo')
+        jim = Player('Jim', '~jimbo')
+        joe = Player('Joe', '~joemg')
+        game.start()
+        game.add_player(bob)
+        game.add_player(jim)
+        game.add_player(joe)
+        game.players[0].points = 5
+        game.players[1].points = 4
+        game.players[2].points = 3
+        def point_word(points):
+            return 'point' if points == 1 else 'points'
+        string = [text.format(player=pl.nick, points=pl.points, 
+                              point_word=point_word(pl.points))
+                              for pl in game.players]
+        self.assertEqual(', '.join(string), game.score_list())
+            
+
 
 class ParserTest(unittest.TestCase):
     def setUp(self):
