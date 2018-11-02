@@ -331,6 +331,22 @@ class GameTest(unittest.TestCase):
         self.assertEqual(prev_players[1], game.players[0])
         self.assertEqual(prev_players[2], game.players[1])
 
+    def test_quit_works_with_one_player(self):
+        game = Game()
+        bob = Player('Bob', '~bobbo')
+        run_command(game, 'start', user=bob)
+        run_command(game, 'quit', user=bob)
+        self.assertEqual(0, len(game.players))
+
+    def test_quit_says_something(self):
+        text = Config().data['text']['en']['quit_message'].format(player='Bob')
+        game = Game()
+        bob = Player('Bob', '~bobbo')
+        run_command(game, 'start', user=bob)
+        run_command(game, 'quit', user=bob)
+        expected = call(text)
+        self.assertEqual(str(expected), str(cahirc.Cahirc.say.mock_calls[-1]))
+
 
 
 class GamePlayerTest(unittest.TestCase):
