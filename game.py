@@ -78,6 +78,14 @@ class Game(object):
             self.status = 'wait_czar'
             self.announce_answers()
 
+    def quit(self, player: Player=None, args=None) -> None:
+        """ remove player from the game """
+        new_players = []
+        for pl in self.players:
+            if pl != player:
+                new_players.append(pl)
+        self.players = new_players
+            
     def score(self, player: Player=None, args=None) -> None:
         """ report the current score """
         if self.status == 'inactive':

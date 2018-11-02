@@ -25,6 +25,7 @@ class CmdParser(object):
                      'list': Attrs(False, False, False, True),
                      'pick': Attrs(True, True, False, False),
                      'play': Attrs(True, True, True, False),
+                     'quit': Attrs(False, False, False, False),
                      'score': Attrs(False, False, False, False),
                      'shame': Attrs(False, False, False, False),
                      'start': Attrs(True, False, False, True),
@@ -37,7 +38,8 @@ class CmdParser(object):
         # 'pick' aliases to 'play' most of the time so that the play()
         # function can deal with out of bound conditions
         Cmdalias = namedtuple('Cmdalias', 'alias command state')
-        self.aliases = [ Cmdalias('pick', 'winner', 'wait_czar'),
+        self.aliases = [ Cmdalias('leave', 'quit', 'any'),
+                         Cmdalias('pick', 'winner', 'wait_czar'),
                          Cmdalias('pick', 'play', 'any'),
                          Cmdalias('players', 'list', 'any'),
                          Cmdalias('shame', 'score', 'any'),
