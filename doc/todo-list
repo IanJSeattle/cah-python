@@ -17,6 +17,9 @@ add a 'leave'/'quit' command so a player can leave the game
 [finished]
 print index numbers for judge choices once all the cards are in
 
+[finished]
+status command should print out card choices in wait_czar
+
 when 0 players are left after a leave/quit, set game state to inactive
 and lose stats related to the previous game
 
@@ -24,8 +27,6 @@ add a 'reload' command to reload cards
 
 deal with the game-winning scenario (ie, announce a win when one player
 gets to config['max_points'])
-
-status command should print out card choices in wait_czar
 
 non-czar shouldn't be able to pick a winner
 
