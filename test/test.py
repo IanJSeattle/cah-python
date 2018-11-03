@@ -596,6 +596,18 @@ class StatusTest(unittest.TestCase):
         self.assertEqual(str(expected), str(cahirc.Cahirc.say.mock_calls[-1]),
             msg='This test fails regularly since the order of the player list is not deterministic')
 
+    def test_status_wait_czar(self):
+        game = start_game()
+        num_cards = game.question.pick
+        nums = ' '.join([str(i) for i in range(num_cards)])
+        run_command(game, 'play {}'.format(nums), user=game.players[1])
+        run_command(game, 'play {}'.format(nums), user=game.players[2])
+        run_command(game, 'status', user=game.players[0])
+        played_annc = game.get_text('status')['wait_czar']
+        played_annc = played_annc.format(czar=game.players[0].nick)
+        self.assertTrue(re.search(played_annc,
+            str(cahirc.Cahirc.say.mock_calls[-3])))
+
 
 class ListCmdTest(unittest.TestCase):
     def setUp(self):

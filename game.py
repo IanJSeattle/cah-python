@@ -76,7 +76,8 @@ class Game(object):
             raise NotPermitted('multiple answers not allowed')
         if len(self.answers) == len(self.players) - 1:
             self.status = 'wait_czar'
-            self.announce_answers()
+            annc = self.get_text('all_cards_played')
+            self.announce_answers(annc)
 
     def quit(self, player: Player=None, args=None) -> None:
         """ remove player from the game """
@@ -130,6 +131,10 @@ class Game(object):
             msg = text['wait_answers']
             msg = msg.format(players=players, question=question)
             self.irc.say(msg)
+        elif self.status == 'wait_czar':
+            msg = text['wait_czar']
+            msg = msg.format(czar=self.czar.nick)
+            self.announce_answers(msg)
 
     def winner(self, player:Player, args):
         """ record the winner of the round """
@@ -224,9 +229,8 @@ class Game(object):
             points=player.points)
         self.irc.say(text)
 
-    def announce_answers(self):
-        annc = self.get_text('all_cards_played')
-        self.irc.say(annc)
+    def announce_answers(self, text):
+        self.irc.say(text)
         players = self.randomize_answers()
         for i, player in enumerate(players):
             cards = self.answers[player]['cards']
