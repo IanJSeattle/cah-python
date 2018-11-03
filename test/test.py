@@ -1081,6 +1081,10 @@ class GameIRCTest(unittest.TestCase):
         played_annc = config['text']['en']['all_cards_played']
         self.assertTrue(re.search(played_annc,
             str(cahirc.Cahirc.say.mock_calls[8])))
+        self.assertTrue(re.search('[0]', 
+                        str(cahirc.Cahirc.say.mock_calls[9])))
+        self.assertTrue(re.search('[1]', 
+                        str(cahirc.Cahirc.say.mock_calls[10])))
 
     def test_irc_game(self):
         config = Config().data
@@ -1163,7 +1167,7 @@ class ResponseTest(unittest.TestCase):
         expected_answer = 'TEST is TEST'
         game.play(joe, answer_card)
         game.play(jim, answer_card)
-        self.assertEqual(f"call('{expected_answer}')",
+        self.assertEqual(f"call('[1] {expected_answer}')",
             str(cahirc.Cahirc.say.mock_calls[-1]))
 
     def test_winner_is_announced(self):

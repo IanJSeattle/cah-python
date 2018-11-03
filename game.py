@@ -1,4 +1,4 @@
-# vi: set expandtab ai:
+# vi: set expandtab ai wm=1:
 
 import config
 import os
@@ -228,9 +228,9 @@ class Game(object):
         annc = self.get_text('all_cards_played')
         self.irc.say(annc)
         players = self.randomize_answers()
-        for player in players:
+        for i, player in enumerate(players):
             cards = self.answers[player]['cards']
-            self.irc.say(self.format_answer(cards))
+            self.irc.say('[{}] {}'.format(i, self.format_answer(cards)))
  
     def format_answer(self, cards):
         # TODO: add extra {}s on the end to add up to the PICK number
