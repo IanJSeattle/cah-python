@@ -1,0 +1,18 @@
+things to keep track of in the database:
+
+users:
+nick
+username 
+
+stats per game:
+game number
+datetime of round start/end
+round number
+who won the round
+who won the game
+
+stats long-term:
+points won per user
+games won per user
+games started per user
+games joined per user
