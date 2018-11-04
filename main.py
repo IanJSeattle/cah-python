@@ -8,7 +8,10 @@ import cmdparser as p
 
 logger = logging.getLogger(__name__)
 
+currgame = None
+
 def main():
+    global currgame
     setup_logging()
     currgame = game.Game()
     logger.info('Establishing IRC connection')
@@ -32,4 +35,8 @@ def receive_msg(currgame, msg):
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        currgame.irc.die('Thanks for playing!')
+        logger.info('shutting down by keyboard interrupt')
