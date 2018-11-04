@@ -365,6 +365,12 @@ class GameTest(unittest.TestCase):
         self.assertEqual('inactive', game.status)
         self.assertEqual([], game.players)
 
+    def test_czar_reassigned_when_czar_quits(self):
+        game = start_game()
+        czar = game.czar
+        run_command(game, 'quit', user=czar)
+        self.assertEqual(game.players[0], game.czar)
+
 
 
 class GamePlayerTest(unittest.TestCase):
