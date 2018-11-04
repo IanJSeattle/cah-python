@@ -22,8 +22,11 @@ language: en
 text:
   en:
     all_cards_played: "Everyone has played. Here are the entries:"
+    already_played: "You already played a card this round"
     double_join: "You are already in the game!"
+    not_czar: "You're not the czar, wait your turn"
     not_implemented: "This command is not yet implemented"
+    not_player: "You're the czar, you don't play this round"
     player_list: "Players currently in the game: {players}"
     player_hand: "Your cards are: {cards}"
     player_played: "You played: {card}"

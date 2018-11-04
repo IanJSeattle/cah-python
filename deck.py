@@ -78,3 +78,17 @@ class Deck(object):
         self.dealt_answers = []
         self.questioncards += self.dealt_questions
         self.dealt_questions = []
+
+    def undeal_last(self, cardtype):
+        """
+        "undeal" the last card back into active cards.  used when a
+        player does a double-play.  stupid, but necessary since the
+        CmdParser is what's currently doing the dealing, so the Game
+        can't prevent the second deal().
+        """
+        if cardtype == 'Answer':
+            card = self.dealt_answers.pop()
+            self.answercards.append(card)
+        elif cardtype == 'Question':
+            card = self.dealt_questions.pop()
+            self.questioncards.append(card)
