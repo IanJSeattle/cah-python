@@ -24,17 +24,20 @@ class Cahirc(irc.bot.SingleServerIRCBot):
         super().__init__([(server, port)], nickname, nickname)
         self.channel = config['default_channel']
         self.destination = self.channel
+        self.started = False
 
     #------------------------------------------------------------
     # IRC bot functions
     #------------------------------------------------------------
 
     def start(self):
-        logger.info('Starting IRC subsystem')
-        super().start()
+        if not self.started:
+            logger.info('Starting IRC subsystem')
+            self.started = True
+            super().start()
 
     def on_nicknameinuse(self, connection, event):
-        nick = connetion.get_nickname()
+        nick = connection.get_nickname()
         newnick = nick + '_'
         #logger.info(f'Nickname "{nick}" already in use, trying "{newnick}"')
         logger.info('Nickname "{}" already in use, trying "{}"'
