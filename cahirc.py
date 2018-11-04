@@ -7,7 +7,7 @@ import irc.strings
 from irc.client import Event, NickMask
 from config import Config
 from player import Player
-from main import receive_msg
+from pycardbot import receive_msg
 import cmdparser as p
 
 logger = logging.getLogger(__name__)
