@@ -1172,6 +1172,16 @@ class GameIRCTest(unittest.TestCase):
         expected = str(call(text))
         self.assertEqual(expected, str(cahirc.Cahirc.say.mock_calls[-4]))
 
+    def test_second_round_conditions_are_sensible(self):
+        game = start_game()
+        pick = game.question.pick
+        cardslist = ' '.join([str(i) for i in range(pick)])
+        run_command(game, f'pick {cardslist}', user=game.players[1])
+        run_command(game, f'pick {cardslist}', user=game.players[2])
+        run_command(game, 'winner 0', user=game.players[0])
+        for i in range(3):
+            self.assertEqual(10, len(game.players[i].deck))
+
 
 
 

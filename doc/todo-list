@@ -20,6 +20,13 @@ print index numbers for judge choices once all the cards are in
 [finished]
 status command should print out card choices in wait_czar
 
+[finished]
+once a winner is picked, maybe try running round 2 (tied to endgame
+code, problably)
+
+[finished]
+new round should add a card to everyone's hand
+
 when 0 players are left after a leave/quit, set game state to inactive
 and lose stats related to the previous game
 
@@ -29,10 +36,5 @@ deal with the game-winning scenario (ie, announce a win when one player
 gets to config['max_points'])
 
 non-czar shouldn't be able to pick a winner
-
-once a winner is picked, maybe try running round 2 (tied to endgame
-code, problably)
-
-new round should add a card to everyone's hand
 
 'pick 3' cards should add cards to player's hand

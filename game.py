@@ -144,6 +144,7 @@ class Game(object):
         person.record_win()
         self.announce_winner(person)
         self.next_czar()
+        self.top_up_hands()
         self.start_round()
 
     #-----------------------------------------------------------------
@@ -222,6 +223,14 @@ class Game(object):
             for player in self.players:
                 card = self.deck.deal('Answer')
                 player.add_card(card)
+
+    def top_up_hands(self):
+        for player in self.players:
+            missing = self.config['hand_size'] - len(player.deck)
+            if missing:
+                for i in range(missing):
+                    card = self.deck.deal('Answer')
+                    player.add_card(card)
 
     def announce_winner(self, player:Player) -> None:
         text = self.get_text('winner_announcement')
