@@ -32,3 +32,7 @@ non-czar shouldn't be able to pick a winner
 
 once a winner is picked, maybe try running round 2 (tied to endgame
 code, problably)
+
+new round should add a card to everyone's hand
+
+'pick 3' cards should add cards to player's hand

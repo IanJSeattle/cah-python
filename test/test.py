@@ -238,6 +238,9 @@ class PlayerTest(unittest.TestCase):
 
 
 class GameTest(unittest.TestCase):
+    def setUp(self):
+        cahirc.Cahirc.say.reset_mock()
+
     def test_init_establishes_good_defaults(self):
         game = Game()
         self.assertEqual(game.status, 'inactive')
@@ -279,17 +282,23 @@ class GameTest(unittest.TestCase):
         cardslist = ' '.join([str(i) for i in range(pick)])
         run_command(game, f'play {cardslist}', user=game.players[1])
         run_command(game, f'play {cardslist}', user=game.players[2])
+        answers = game.answers
+        # these shenanigans are because we need to save info before
+        # the 'winner' command is run, or else the second round nukes the
+        # verification data
+        winners = {player: game.format_answer(answers[player]['cards']) 
+                   for player in answers}
+        annc = game.get_text('winner_announcement')
         run_command(game, 'winner 0', user=game.players[0])
-        annc = config['text']['en']['winner_announcement']
         if game.players[1].points == 1:
             winner = game.players[1]
         else:
             winner = game.players[2]
-        cards = game.answers[winner]['cards']
-        answer = game.format_answer(cards)
+        cards = answers[winner]['cards']
+        answer = winners[winner]
         annc = annc.format(player=winner.nick, card=answer, points=1)
         expected = call(annc)
-        self.assertEqual(str(expected), str(cahirc.Cahirc.say.mock_calls[-1]))
+        self.assertEqual(str(expected), str(cahirc.Cahirc.say.mock_calls[-5]))
 
     def test_start_cant_be_run_twice(self):
         text = Config().data['text']['en']
@@ -1151,6 +1160,18 @@ class GameIRCTest(unittest.TestCase):
         self.assertEqual('call("{}")'.format(text), 
                          str(cahirc.Cahirc.say.mock_calls[-2]))
 
+    def test_winner_triggers_second_round(self):
+        game = start_game()
+        pick = game.question.pick
+        cardslist = ' '.join([str(i) for i in range(pick)])
+        run_command(game, f'pick {cardslist}', user=game.players[1])
+        run_command(game, f'pick {cardslist}', user=game.players[2])
+        run_command(game, 'winner 0', user=game.players[0])
+        text = game.get_text('round_announcement')
+        text = text.format(round_num=2, czar=game.players[1].nick)
+        expected = str(call(text))
+        self.assertEqual(expected, str(cahirc.Cahirc.say.mock_calls[-4]))
+
 
 
 
@@ -1205,7 +1226,7 @@ class ResponseTest(unittest.TestCase):
         expected_answer = text.format(player=winner.nick,
             card=f'{winner.nick.upper()} is TEST', points=1)
         self.assertEqual(f"call('{expected_answer}')",
-            str(cahirc.Cahirc.say.mock_calls[-1]))
+            str(cahirc.Cahirc.say.mock_calls[-5]))
 
 
 

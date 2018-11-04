@@ -144,6 +144,7 @@ class Game(object):
         person.record_win()
         self.announce_winner(person)
         self.next_czar()
+        self.start_round()
 
     #-----------------------------------------------------------------
     # methods
