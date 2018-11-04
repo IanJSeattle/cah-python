@@ -28,6 +28,7 @@ class Game(object):
         self.lang = self.config['language']
         self.channel = self.config['default_channel']
         self.irc = irc.Cahirc(self)
+        self.irc.say(self.get_text('game_start'))
 
     #-----------------------------------------------------------------
     # commands
@@ -151,11 +152,24 @@ class Game(object):
         self.announce_winner(person)
         self.next_czar()
         self.top_up_hands()
-        self.start_round()
+        game_winner = self.get_game_winner()
+        if game_winner:
+            self.announce_game_winner()
+            self.end_game()
+        else:
+            self.start_round()
 
     #-----------------------------------------------------------------
     # methods
     #-----------------------------------------------------------------
+
+    def announce_game_winner(self):
+        game_winner = self.get_text('game_winner')
+        score_element = self.get_text('score_element')
+        scores = self.score_list()
+        self.irc.say(game_winner.format(player=self.get_game_winner(),
+                                        points=self.config['max_points'],
+                                        scores=scores))
 
     # guaranteed not to get a duplicate player
     def add_player(self, player):
@@ -184,6 +198,9 @@ class Game(object):
 
     def get_text(self, key):
         return self.config['text'][self.lang][key]
+
+    def end_game(self):
+        self.__init__()
 
     def next_czar(self) -> int:
         self._czar += 1
@@ -304,6 +321,13 @@ class Game(object):
                        sorted(self.players, key=lambda p: max_points -
                        p.points)]
         return ', '.join(score_order)
+
+    def get_game_winner(self):
+        max_points = self.config['max_points']
+        for player in self.players:
+            if player.get_score()[0] == max_points:
+                return player
+        return None
 
 
     #-----------------------------------------------------------------

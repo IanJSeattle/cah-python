@@ -568,7 +568,7 @@ class StatusTest(unittest.TestCase):
         msg = FakeIRCmsg('status')
         p.parse(msg)
         game.command(p)
-        self.assertEqual(expected, cahirc.Cahirc.say.mock_calls[2])
+        self.assertEqual(expected, cahirc.Cahirc.say.mock_calls[-1])
 
     def test_status_inactive(self):
         bob = Player('Bob', '~bobbo')
@@ -577,7 +577,7 @@ class StatusTest(unittest.TestCase):
         game = Game()
         game.status = 'inactive'
         game.state(bob, [])
-        self.assertEqual(str(expected), str(cahirc.Cahirc.say.mock_calls[0]))
+        self.assertEqual(str(expected), str(cahirc.Cahirc.say.mock_calls[-1]))
 
     def test_status_wait_answers(self):
         bob = Player('Bob', '~bobbo')
@@ -732,7 +732,7 @@ class ScoreCmdTest(unittest.TestCase):
         game = Game()
         bob = Player('Bob', '~bobbo')
         run_command(game, 'score', user=bob)
-        cahirc.Cahirc.say.assert_not_called()
+        cahirc.Cahirc.say.assert_called_once()
             
 
 
@@ -972,7 +972,7 @@ class GameIRCTest(unittest.TestCase):
         p.parse(msg)
         game.command(p)
         self.assertEqual('call("{}")'.format(text),
-                         str(cahirc.Cahirc.say.mock_calls[0]))
+                         str(cahirc.Cahirc.say.mock_calls[1]))
 
     def test_game_start_says_game_start(self):
         config = Config()
@@ -982,7 +982,7 @@ class GameIRCTest(unittest.TestCase):
         msg = FakeIRCmsg('start')
         p.parse(msg)
         game.command(p)
-        self.assertEqual(2, len(cahirc.Cahirc.say.mock_calls))
+        self.assertEqual(3, len(cahirc.Cahirc.say.mock_calls))
 
     def test_game_start_joining_works(self):
         game = Game()
@@ -1069,7 +1069,7 @@ class GameIRCTest(unittest.TestCase):
         game.add_player(joe)
         game.add_player(jim)
         self.assertTrue(re.search('Card: ',
-            str(cahirc.Cahirc.say.mock_calls[5])))
+            str(cahirc.Cahirc.say.mock_calls[6])))
 
     def test_joe_gets_cards(self):
         game = Game()
@@ -1081,7 +1081,7 @@ class GameIRCTest(unittest.TestCase):
         game.add_player(joe)
         game.add_player(jim)
         self.assertTrue(re.search('Your cards are: ',
-            str(cahirc.Cahirc.say.mock_calls[6])))
+            str(cahirc.Cahirc.say.mock_calls[7])))
 
     def test_candidates_are_announced(self):
         config = Config().data
@@ -1097,11 +1097,11 @@ class GameIRCTest(unittest.TestCase):
         game.play(jim, jim.deal(1))
         played_annc = config['text']['en']['all_cards_played']
         self.assertTrue(re.search(played_annc,
-            str(cahirc.Cahirc.say.mock_calls[8])))
+            str(cahirc.Cahirc.say.mock_calls[9])))
         self.assertTrue(re.search('[0]', 
-                        str(cahirc.Cahirc.say.mock_calls[9])))
-        self.assertTrue(re.search('[1]', 
                         str(cahirc.Cahirc.say.mock_calls[10])))
+        self.assertTrue(re.search('[1]', 
+                        str(cahirc.Cahirc.say.mock_calls[11])))
 
     def test_irc_game(self):
         config = Config().data
@@ -1188,6 +1188,26 @@ class GameIRCTest(unittest.TestCase):
         run_command(game, 'winner 0', user=game.players[2])
         self.assertEqual('wait_czar', game.status)
 
+    def test_end_game(self):
+        game = start_game()
+        max_points = Config().data['max_points']
+        while True:
+            pick = game.question.pick
+            cardslist = ' '.join([str(i) for i in range(pick)])
+            for player in game.players:
+                run_command(game, f'pick {cardslist}', user=player)
+            run_command(game, 'winner 0', user=game.czar)
+            for player in game.players:
+                points = player.get_score()[0]
+                name = player.nick
+                if points > max_points:
+                    self.fail(f'player {name} has {points} points')
+                    break
+            if game.status == 'inactive':
+                break
+        expected = str(call(game.get_text('game_start')))
+        self.assertEqual(expected, str(cahirc.Cahirc.say.mock_calls[-1]))
+
 
 
 
@@ -1196,9 +1216,9 @@ class ResponseTest(unittest.TestCase):
         cahirc.Cahirc.say.reset_mock()
         game = start_game()
         self.assertTrue(re.search("Round 1!",
-            str(cahirc.Cahirc.say.mock_calls[4])))
+            str(cahirc.Cahirc.say.mock_calls[5])))
         self.assertTrue(re.search("Bob is the card czar",
-            str(cahirc.Cahirc.say.mock_calls[4])))
+            str(cahirc.Cahirc.say.mock_calls[5])))
 
     def test_answers_are_displayed(self):
         cahirc.Cahirc.say.reset_mock()
