@@ -355,7 +355,15 @@ class GameTest(unittest.TestCase):
         run_command(game, 'start', user=bob)
         run_command(game, 'quit', user=bob)
         expected = call(text)
-        self.assertEqual(str(expected), str(cahirc.Cahirc.say.mock_calls[-1]))
+        self.assertEqual(str(expected), str(cahirc.Cahirc.say.mock_calls[-2]))
+
+    def test_quit_ends_game_when_zero_players(self):
+        game = start_game()
+        run_command(game, 'quit', user=game.players[2])
+        run_command(game, 'quit', user=game.players[0])
+        run_command(game, 'quit', user=game.players[0])
+        self.assertEqual('inactive', game.status)
+        self.assertEqual([], game.players)
 
 
 
