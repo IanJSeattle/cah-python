@@ -8,13 +8,17 @@ import cmdparser as p
 
 logger = logging.getLogger(__name__)
 
-currgame = None
-
 def main():
-    global currgame
     setup_logging()
-    currgame = game.Game()
-    logger.info('Establishing IRC connection')
+    maingame = None
+    try:
+        logger.info('Establishing IRC connection')
+        maingame = game.Game()
+    except KeyboardInterrupt:
+        if maingame:
+            maingame.irc.die('Thanks for playing!')
+        logger.info('shutting down by keyboard interrupt')
+        print('Shutting down')
 
 
 def setup_logging():
@@ -35,8 +39,4 @@ def receive_msg(currgame, msg):
 
 
 if __name__ == '__main__':
-    try:
-        main()
-    except KeyboardInterrupt:
-        currgame.irc.die('Thanks for playing!')
-        logger.info('shutting down by keyboard interrupt')
+    main()
