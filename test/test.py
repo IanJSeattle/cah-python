@@ -32,6 +32,7 @@ import game as gameclass
 from game import irc as cahirc
 
 cahirc.Cahirc.say = MagicMock()
+cahirc.Cahirc.start = MagicMock()
 
 def start_game():
     game = gameclass.Game()

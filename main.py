@@ -12,7 +12,6 @@ def main():
     setup_logging()
     currgame = game.Game()
     logger.info('Establishing IRC connection')
-    currgame.irc.start()
 
 
 def setup_logging():
