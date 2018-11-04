@@ -36,5 +36,5 @@ class Config(object):
             if name not in self._fields:
                 raise ValueError('{} is not a known config field'.format(name))
 
-    def refresh(self):
+    def reload(self):
         self.read_files()

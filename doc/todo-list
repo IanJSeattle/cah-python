@@ -44,8 +44,11 @@ and lose stats related to the previous game
 [finished]
 add a 'help' command that lists available commands and a help blurb
 
-add a 'reload' command to reload cards
-
+[finished]
 when the current czar quits, re-assign the czar appropriately
+
+[finished]
+add a 'reload' command to reload the config file (cards are already
+reloaded for each new game)
 
 add sqlite database to track stats

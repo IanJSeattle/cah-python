@@ -37,6 +37,8 @@ text:
     player_played: "You played: {card}"
     question_announcement: "Card: {card}"
     quit_message: "{player} has left the game"
+    reload_announcement: "Reloading config files"
+    reload_wait: "Please wait until the game is over to reload the config"
     round_announcement: "Round {round_num}! {czar} is the card czar"
     round_start: "A new game is starting! Type 'join' to get in."
     score_announcement: "The most horrible people: {scores}"
