@@ -21,6 +21,8 @@ class CmdParser(object):
         Attrs = namedtuple('Attrs', 'hasargs required cardargs anon')
         self.cmdattrs = { 
                      'cards': Attrs(False, False, False, False),
+                     'commands': Attrs(False, False, False, True),
+                     'help': Attrs(False, False, False, True),
                      'join': Attrs(False, False, False, True),
                      'list': Attrs(False, False, False, True),
                      'pick': Attrs(True, True, False, False),
@@ -69,6 +71,9 @@ class CmdParser(object):
                 return
             if re.search('^\d$', self.words[i]):
                 self.args.append(int(self.words[i]))
+
+    def get_commands(self) -> str:
+        return ', '.join(list(self.cmdattrs.keys()))
 
     def parse(self, msg=None):
         self.set_recipient(msg)

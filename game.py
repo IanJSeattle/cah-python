@@ -8,6 +8,7 @@ import config
 from deck import Deck
 from card import Card
 from player import Player
+import cmdparser as parser
 import cahirc as irc
 from random import shuffle
 from exceptions import NotPermitted
@@ -48,6 +49,12 @@ class Game(object):
         annc = annc.format(card=self.question.formattedvalue)
         self.irc.say(annc)
         self.show_hand(player)
+
+    def commands(self, player, args):
+        self.irc.say(parser.CmdParser(self).get_commands())
+
+    def help(self, player, args):
+        self.irc.say(self.get_text('help_blurb'))
 
     def join(self, player, args):
         """ add a new player to the game """

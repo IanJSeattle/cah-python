@@ -44,3 +44,5 @@ and lose stats related to the previous game
 add a 'reload' command to reload cards
 
 when the current czar quits, re-assign the czar appropriately
+
+add a 'help' command that lists available commands and a help blurb
