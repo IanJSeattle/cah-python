@@ -1217,6 +1217,18 @@ class GameIRCTest(unittest.TestCase):
         expected = str(call(game.get_text('game_start')))
         self.assertEqual(expected, str(cahirc.Cahirc.say.mock_calls[-1]))
 
+    def test_help_command(self):
+        game = start_game()
+        run_command(game, 'help')
+        expected = str(call(game.get_text('help_blurb')))
+        self.assertEqual(expected, str(cahirc.Cahirc.say.mock_calls[-1]))
+
+    def test_commands_command(self):
+        game = start_game()
+        run_command(game, 'commands')
+        expected = str(call(CmdParser(game).get_commands()))
+        self.assertEqual(expected, str(cahirc.Cahirc.say.mock_calls[-1]))
+
 
 
 
