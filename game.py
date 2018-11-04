@@ -214,7 +214,14 @@ class Game(object):
         return self.config['text'][self.lang][key]
 
     def end_game(self):
-        self.__init__()
+        self.status = 'inactive'
+        self.round_num = 0
+        self.players = []
+        self._czar = 0
+        self.question = None
+        self.answers = {}
+        self.answer_order = {}
+        self.deck = Deck()
 
     def next_czar(self) -> int:
         self._czar += 1
