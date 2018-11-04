@@ -1,15 +1,18 @@
 # vi: set expandtab ai wm=1:
 
-import config
 import os
 import re
+import logging
 #from typing import List
+import config
 from deck import Deck
 from card import Card
 from player import Player
 import cahirc as irc
 from random import shuffle
 from exceptions import NotPermitted
+
+logger = logging.getLogger(__name__)
 
 class Game(object):
     def __init__(self):
@@ -28,6 +31,7 @@ class Game(object):
         self.lang = self.config['language']
         self.channel = self.config['default_channel']
         self.irc = irc.Cahirc(self)
+        self.irc.start()
         self.irc.say(self.get_text('game_start'))
 
     #-----------------------------------------------------------------
@@ -237,6 +241,8 @@ class Game(object):
     def command(self, parser):
         if parser.command is None:
             return
+        logger.info('{player} called {cmd} command'.format(player=parser.player,
+                                                           cmd=parser.command))
         func = getattr(self, parser.command)
         func(parser.player, parser.args)
 
