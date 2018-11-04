@@ -28,6 +28,7 @@ class CmdParser(object):
                      'pick': Attrs(True, True, False, False),
                      'play': Attrs(True, True, True, False),
                      'quit': Attrs(False, False, False, False),
+                     'reload': Attrs(False, False, False, True),
                      'score': Attrs(False, False, False, False),
                      'shame': Attrs(False, False, False, False),
                      'start': Attrs(True, False, False, True),

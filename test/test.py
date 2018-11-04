@@ -15,6 +15,7 @@ from unittest.mock import MagicMock
 from unittest.mock import patch
 from unittest.mock import call
 import irc.client
+from shutil import copyfile
 
 sys.path.append('..')
 sys.path.append('.')
@@ -749,6 +750,27 @@ class ScoreCmdTest(unittest.TestCase):
         run_command(game, 'score', user=bob)
         cahirc.Cahirc.say.assert_called_once()
             
+
+class ReloadCmdTest(unittest.TestCase):
+    def test_reload_ignored_while_game_running(self):
+        game = start_game()
+        run_command(game, 'reload')
+        expected = str(call(game.get_text('reload_wait')))
+        self.assertEqual(expected, str(cahirc.Cahirc.say.mock_calls[-1]))
+
+    def test_reload_loads_new_config(self):
+        game = Game()
+        Config._fields.append('testvalue')
+        old_config = game.config
+        copyfile('config.yaml', 'config.yaml.real')
+        with open('config.yaml', 'a') as fp:
+            fp.write('testvalue: foo')
+        run_command(game, 'reload')
+        copyfile('config.yaml.real', 'config.yaml')
+        os.unlink('config.yaml.real')
+        self.assertIn('testvalue', game.config)
+        unexpected = str(call(game.get_text('reload_wait')))
+        self.assertNotEqual(unexpected, str(cahirc.Cahirc.say.mock_calls[-1]))
 
 
 class ParserTest(unittest.TestCase):

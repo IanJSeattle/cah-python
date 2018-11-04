@@ -28,7 +28,8 @@ class Game(object):
         self.answers = {}
         self.answer_order = {}
         self.deck = Deck()
-        self.config = config.Config().data
+        self.configobj = config.Config()
+        self.config = self.configobj.data
         self.lang = self.config['language']
         self.channel = self.config['default_channel']
         self.irc = irc.Cahirc(self)
@@ -109,6 +110,14 @@ class Game(object):
         else:
             self.end_game()
             
+    def reload(self, player, args):
+        """ reload config files (cards reload with each game) """
+        if self.status != 'inactive':
+            self.irc.say(self.get_text('reload_wait'))
+            return
+        self.configobj.reload()
+        self.config = self.configobj.data
+
     def score(self, player: Player=None, args=None) -> None:
         """ report the current score """
         if self.status == 'inactive':
