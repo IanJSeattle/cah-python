@@ -73,7 +73,7 @@ class CmdParser(object):
                 self.args.append(int(self.words[i]))
 
     def get_commands(self) -> str:
-        return ', '.join(list(self.cmdattrs.keys()))
+        return ', '.join(sorted(list(self.cmdattrs.keys())))
 
     def parse(self, msg=None):
         self.set_recipient(msg)
