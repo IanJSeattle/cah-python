@@ -65,7 +65,8 @@ class Game(object):
         if self.status != 'wait_answers':
             return
         if player == self.czar:
-            raise NotPermitted('czar may not play')
+            self.irc.say(self.get_text('not_player'))
+            return
         if player not in self.answers:
             self.answers[player] = {}
             if type(cards) is not list:
@@ -73,7 +74,10 @@ class Game(object):
             else:
                 self.answers[player]['cards'] = cards
         else:
-            raise NotPermitted('multiple answers not allowed')
+            self.irc.say(self.get_text('already_played'))
+            for i in range(self.question.pick):
+                player.deck.undeal_last('Answer')
+            return
         if len(self.answers) == len(self.players) - 1:
             self.status = 'wait_czar'
             annc = self.get_text('all_cards_played')
@@ -138,7 +142,9 @@ class Game(object):
 
     def winner(self, player:Player, args):
         """ record the winner of the round """
-        # player is the player who made the call; ignore
+        if player != self.czar:
+            self.irc.say(self.get_text('not_czar'))
+            return
         answer_num = args[0]
         person = self.answer_order[answer_num]
         person.record_win()
@@ -214,7 +220,6 @@ class Game(object):
     def command(self, parser):
         if parser.command is None:
             return
-        #import pdb; pdb.set_trace()
         func = getattr(self, parser.command)
         func(parser.player, parser.args)
 

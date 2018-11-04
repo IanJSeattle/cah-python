@@ -452,16 +452,13 @@ class PlayTest(unittest.TestCase):
         self.assertEqual(10, len(jim.show_hand()))
 
     def test_czar_answer_not_accepted(self):
-        game = Game()
-        bob = Player('Bob', '~bobbo')
-        joe = Player('Joe', '~bobbo')
-        jim = Player('Jim', '~bobbo')
-        game.start()
-        game.add_player(bob)
-        game.add_player(joe)
-        game.add_player(jim)
-        with self.assertRaises(NotPermitted):
-            game.play(bob, bob.deal(1))
+        game = start_game()
+        num_cards = game.question.pick
+        nums = ' '.join([str(i) for i in range(num_cards)])
+        run_command(game, f'pick {nums}', user=game.players[0])
+        expected = str(call(game.get_text('not_player')))
+        self.assertEqual(expected, str(cahirc.Cahirc.say.mock_calls[-1]))
+
 
     def test_other_answers_accepted(self):
         game = Game()
@@ -479,17 +476,16 @@ class PlayTest(unittest.TestCase):
         self.assertEqual(2, len(game.answers))
 
     def test_multiple_plays_not_allowed(self):
-        game = Game()
-        bob = Player('Bob', '~bobbo')
-        joe = Player('Joe', '~bobbo')
-        jim = Player('Jim', '~bobbo')
-        game.start()
-        game.add_player(bob)
-        game.add_player(joe)
-        game.add_player(jim)
-        game.play(jim, jim.deal(2))
-        with self.assertRaises(NotPermitted):
-            game.play(jim, jim.deal(1))
+        game = start_game()
+        jim = game.players[2]
+        num_cards = game.question.pick
+        remaining = Config().data['hand_size'] - num_cards
+        nums = ' '.join([str(i) for i in range(num_cards)])
+        run_command(game, f'pick {nums}', user=jim)
+        run_command(game, f'pick {nums}', user=jim)
+        expected = str(call(game.get_text('already_played')))
+        self.assertEqual(expected, str(cahirc.Cahirc.say.mock_calls[-1]))
+        self.assertEqual(remaining, len(jim.deck))
 
     def test_correct_status_once_all_played(self):
         game = Game()
@@ -1181,6 +1177,16 @@ class GameIRCTest(unittest.TestCase):
         run_command(game, 'winner 0', user=game.players[0])
         for i in range(3):
             self.assertEqual(10, len(game.players[i].deck))
+        self.assertEqual(game.players[1], game.czar)
+
+    def test_non_czar_cannot_pick_winner(self):
+        game = start_game()
+        pick = game.question.pick
+        cardslist = ' '.join([str(i) for i in range(pick)])
+        run_command(game, f'pick {cardslist}', user=game.players[1])
+        run_command(game, f'pick {cardslist}', user=game.players[2])
+        run_command(game, 'winner 0', user=game.players[2])
+        self.assertEqual('wait_czar', game.status)
 
 
 
