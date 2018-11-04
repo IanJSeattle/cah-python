@@ -222,6 +222,7 @@ class Game(object):
         self.answers = {}
         self.answer_order = {}
         self.deck = Deck()
+        self.irc.say(self.get_text('game_start'))
 
     def next_czar(self) -> int:
         self._czar += 1
