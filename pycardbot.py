@@ -16,7 +16,7 @@ def main():
         maingame = game.Game()
     except KeyboardInterrupt:
         if maingame:
-            maingame.irc.die('Thanks for playing!')
+            maingame.irc.say('Shutting down. Thanks for playing!')
         logger.info('shutting down by keyboard interrupt')
         print('Shutting down')
 

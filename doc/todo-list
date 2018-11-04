@@ -47,3 +47,5 @@ add a 'help' command that lists available commands and a help blurb
 add a 'reload' command to reload cards
 
 when the current czar quits, re-assign the czar appropriately
+
+add sqlite database to track stats
