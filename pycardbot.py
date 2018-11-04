@@ -16,7 +16,10 @@ def main():
         maingame = game.Game()
     except KeyboardInterrupt:
         if maingame:
+            logger.info('sending shutdown message via IRC')
             maingame.irc.say('Shutting down. Thanks for playing!')
+        else:
+            logger.info('unable to send shutdown message via IRC')
         logger.info('shutting down by keyboard interrupt')
         print('Shutting down')
 
