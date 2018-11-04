@@ -97,7 +97,10 @@ class Game(object):
                 new_players.append(pl)
             else:
                 self.irc.say(text.format(player=player.nick))
-        self.players = new_players
+        if new_players:
+            self.players = new_players
+        else:
+            self.end_game()
             
     def score(self, player: Player=None, args=None) -> None:
         """ report the current score """
