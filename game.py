@@ -33,8 +33,6 @@ class Game(object):
         self.lang = self.config['language']
         self.channel = self.config['default_channel']
         self.irc = irc.Cahirc(self)
-        self.irc.start()
-        self.irc.say(self.get_text('game_start'))
 
     #-----------------------------------------------------------------
     # commands
@@ -138,6 +136,7 @@ class Game(object):
             self.add_player(player)
         self.load_cards()
         self.deck.shuffle()
+        logger.info('Starting new game')
 
     def state(self, player, args):
         """ report current game state """

@@ -748,10 +748,13 @@ class ScoreCmdTest(unittest.TestCase):
         game = Game()
         bob = Player('Bob', '~bobbo')
         run_command(game, 'score', user=bob)
-        cahirc.Cahirc.say.assert_called_once()
+        cahirc.Cahirc.say.assert_not_called()
             
 
 class ReloadCmdTest(unittest.TestCase):
+    def setUp(self):
+        cahirc.Cahirc.say.reset_mock()
+
     def test_reload_ignored_while_game_running(self):
         game = start_game()
         run_command(game, 'reload')
@@ -769,8 +772,7 @@ class ReloadCmdTest(unittest.TestCase):
         copyfile('config.yaml.real', 'config.yaml')
         os.unlink('config.yaml.real')
         self.assertIn('testvalue', game.config)
-        unexpected = str(call(game.get_text('reload_wait')))
-        self.assertNotEqual(unexpected, str(cahirc.Cahirc.say.mock_calls[-1]))
+        cahirc.Cahirc.say.assert_not_called()
 
 
 class ParserTest(unittest.TestCase):
@@ -1009,7 +1011,7 @@ class GameIRCTest(unittest.TestCase):
         p.parse(msg)
         game.command(p)
         self.assertEqual('call("{}")'.format(text),
-                         str(cahirc.Cahirc.say.mock_calls[1]))
+                         str(cahirc.Cahirc.say.mock_calls[0]))
 
     def test_game_start_says_game_start(self):
         config = Config()
@@ -1019,7 +1021,7 @@ class GameIRCTest(unittest.TestCase):
         msg = FakeIRCmsg('start')
         p.parse(msg)
         game.command(p)
-        self.assertEqual(3, len(cahirc.Cahirc.say.mock_calls))
+        self.assertEqual(2, len(cahirc.Cahirc.say.mock_calls))
 
     def test_game_start_joining_works(self):
         game = Game()
@@ -1106,7 +1108,7 @@ class GameIRCTest(unittest.TestCase):
         game.add_player(joe)
         game.add_player(jim)
         self.assertTrue(re.search('Card: ',
-            str(cahirc.Cahirc.say.mock_calls[6])))
+            str(cahirc.Cahirc.say.mock_calls[5])))
 
     def test_joe_gets_cards(self):
         game = Game()
@@ -1134,11 +1136,11 @@ class GameIRCTest(unittest.TestCase):
         game.play(jim, jim.deal(1))
         played_annc = config['text']['en']['all_cards_played']
         self.assertTrue(re.search(played_annc,
-            str(cahirc.Cahirc.say.mock_calls[9])))
+            str(cahirc.Cahirc.say.mock_calls[8])))
         self.assertTrue(re.search('[0]', 
-                        str(cahirc.Cahirc.say.mock_calls[10])))
+                        str(cahirc.Cahirc.say.mock_calls[9])))
         self.assertTrue(re.search('[1]', 
-                        str(cahirc.Cahirc.say.mock_calls[11])))
+                        str(cahirc.Cahirc.say.mock_calls[10])))
 
     def test_irc_game(self):
         config = Config().data
@@ -1265,9 +1267,9 @@ class ResponseTest(unittest.TestCase):
         cahirc.Cahirc.say.reset_mock()
         game = start_game()
         self.assertTrue(re.search("Round 1!",
-            str(cahirc.Cahirc.say.mock_calls[5])))
+            str(cahirc.Cahirc.say.mock_calls[4])))
         self.assertTrue(re.search("Bob is the card czar",
-            str(cahirc.Cahirc.say.mock_calls[5])))
+            str(cahirc.Cahirc.say.mock_calls[4])))
 
     def test_answers_are_displayed(self):
         cahirc.Cahirc.say.reset_mock()
