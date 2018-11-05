@@ -1,5 +1,6 @@
 # vi: set et ai wm=0:
 
+import signal
 import sys
 import logging
 import game
@@ -9,19 +10,10 @@ import cmdparser as p
 logger = logging.getLogger(__name__)
 
 def main():
+    signal.signal(signal.SIGINT, signal_handler)
     setup_logging()
-    maingame = None
-    try:
-        logger.info('Establishing IRC connection')
-        maingame = game.Game()
-    except KeyboardInterrupt:
-        if maingame:
-            logger.info('sending shutdown message via IRC')
-            maingame.irc.say('Shutting down. Thanks for playing!')
-        else:
-            logger.info('unable to send shutdown message via IRC')
-        logger.info('shutting down by keyboard interrupt')
-        print('Shutting down')
+    logger.info('Establishing IRC connection')
+    return game.Game()
 
 
 def setup_logging():
@@ -41,5 +33,19 @@ def receive_msg(currgame, msg):
     currgame.command(parser)
 
 
+def signal_handler(sig, frame):
+    logger.info('Shutting down from SIGINT')
+    if maingame:
+        logger.info('Sending shutdown message via IRC')
+        lang = Config().data['language']
+        shutdown_message = Config().data['text'][lang]['shutdown_message']
+        maingame.irc.say(shutdown_message)
+        maingame.irc.die('Shutting down')
+    else:
+        logger.info('Unable to send shutdown message via IRC')
+    sys.exit(0)
+
+
 if __name__ == '__main__':
-    main()
+    maingame = main()
+    maingame.irc.start() # start call never returns
