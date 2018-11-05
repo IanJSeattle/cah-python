@@ -11,6 +11,8 @@ logger = logging.getLogger(__name__)
 
 def main():
     signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGKILL, signal_handler)
     setup_logging()
     logger.info('Establishing IRC connection')
     return game.Game()
@@ -34,7 +36,7 @@ def receive_msg(currgame, msg):
 
 
 def signal_handler(sig, frame):
-    logger.info('Shutting down from SIGINT')
+    logger.info('Shutting down from signal')
     if maingame:
         logger.info('Sending shutdown message via IRC')
         lang = Config().data['language']
