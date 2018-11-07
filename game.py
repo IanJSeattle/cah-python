@@ -84,6 +84,8 @@ class Game(object):
                 self.answers[player]['cards'] = [cards]
             else:
                 self.answers[player]['cards'] = cards
+            fmtd_answer = self.format_answer(self.answers[player]['cards'])
+            #self.irc.say(self.get_text('answer_played').format(fmtd_answer))
         else:
             self.irc.say(self.get_text('already_played'))
             for i in range(self.question.pick):
@@ -180,6 +182,7 @@ class Game(object):
             self.end_game()
         else:
             self.start_round()
+            self.answers = {}
 
     #-----------------------------------------------------------------
     # methods
@@ -232,7 +235,7 @@ class Game(object):
         self.deck = Deck()
         self.irc.say(self.get_text('game_start'))
 
-    def next_czar(self) -> int:
+    def next_czar(self) -> None:
         self._czar += 1
         self._czar %= len(self.players)
         return self.czar
