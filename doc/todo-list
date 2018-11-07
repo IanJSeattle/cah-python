@@ -51,15 +51,17 @@ when the current czar quits, re-assign the czar appropriately
 add a 'reload' command to reload the config file (cards are already
 reloaded for each new game)
 
-add sqlite database to track stats
-
+[finished]
 give players feedback when picking a card
 
-fix handling of questions without a %s in them (ie, answer at end)
-
+[finished]
 "reaper" and "reaper-dis" are treated as the same user.  wtf?
 alternately, the "you already played this round" counter isn't getting
 reset each round
+
+add sqlite database to track stats
+
+fix handling of questions without a %s in them (ie, answer at end)
 
 new player in game isn't dealt cards
 
