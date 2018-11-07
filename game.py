@@ -34,6 +34,10 @@ class Game(object):
         self.channel = self.config['default_channel']
         self.irc = irc.Cahirc(self)
 
+    def __repr__(self):
+        return ('Game round: {round}; status: {status}; czar: '
+                '{czar}'.format(round=self.round_num, status=self.status,
+                czar=self.czar))
     #-----------------------------------------------------------------
     # commands
     #-----------------------------------------------------------------
@@ -84,8 +88,8 @@ class Game(object):
                 self.answers[player]['cards'] = [cards]
             else:
                 self.answers[player]['cards'] = cards
-            fmtd_answer = self.format_answer(self.answers[player]['cards'])
-            #self.irc.say(self.get_text('answer_played').format(fmtd_answer))
+            answer = self.format_answer(self.answers[player]['cards'])
+            self.irc.say(self.get_text('answer_played').format(answer=answer))
         else:
             self.irc.say(self.get_text('already_played'))
             for i in range(self.question.pick):
@@ -270,8 +274,9 @@ class Game(object):
     def command(self, parser):
         if parser.command is None:
             return
-        logger.info('{player} called {cmd} command'.format(player=parser.player,
-                                                           cmd=parser.command))
+        msg = '{player} called {cmd} command'.format(player=parser.player,
+                                                     cmd=parser.command)
+        logger.info(msg)
         func = getattr(self, parser.command)
         func(parser.player, parser.args)
 
