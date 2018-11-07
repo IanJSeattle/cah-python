@@ -11,6 +11,7 @@ TODO list:
 """
 
 import unittest, sys, os, re
+import logging
 from unittest.mock import MagicMock
 from unittest.mock import patch
 from unittest.mock import call
@@ -34,6 +35,11 @@ from game import irc as cahirc
 
 cahirc.Cahirc.say = MagicMock()
 cahirc.Cahirc.start = MagicMock()
+
+from pycardbot import setup_logging
+setup_logging()
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 def start_game():
     game = gameclass.Game()
@@ -1276,6 +1282,18 @@ class GameIRCTest(unittest.TestCase):
             for player in game.players:
                 pick_answers(game, player)
             run_command(game, 'winner 0', user=game.czar)
+
+    def test_answer_annc_handles_spaceless_questions(self):
+        game = start_game()
+        question_str = 'Thing is:'
+        card = Card('Question', question_str)
+        game.question = card
+        answercard = game.players[1].deck.answercards[0]
+        run_command(game, 'pick 0', user=game.players[1])
+        text = game.get_text('answer_played')
+        text = text.format(answer=question_str + ' ' + answercard.value)
+        expected = str(call(text))
+        self.assertEqual(expected, str(cahirc.Cahirc.say.mock_calls[-1]))
 
 
 class ResponseTest(unittest.TestCase):
