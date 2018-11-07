@@ -52,3 +52,16 @@ add a 'reload' command to reload the config file (cards are already
 reloaded for each new game)
 
 add sqlite database to track stats
+
+give players feedback when picking a card
+
+fix handling of questions without a %s in them (ie, answer at end)
+
+"reaper" and "reaper-dis" are treated as the same user.  wtf?
+alternately, the "you already played this round" counter isn't getting
+reset each round
+
+new player in game isn't dealt cards
+
+new player with no cards who attempts to play a non-existent card kills
+the bot with "card referenced before instantiated"

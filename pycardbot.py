@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 def main():
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
-    signal.signal(signal.SIGKILL, signal_handler)
     setup_logging()
     logger.info('Establishing IRC connection')
     return game.Game()

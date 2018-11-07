@@ -777,6 +777,14 @@
    },
    {
       "type": "Answer",
+      "value": "'Executive Time'",
+      "keep": "Yes",
+      "draw": 0,
+      "pick": 1,
+      "source": "Eidolon Addendum Set"
+   },
+   {
+      "type": "Answer",
       "value": "Clippy",
       "keep": "Yes",
       "draw": 0,
