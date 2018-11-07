@@ -12,6 +12,7 @@ import cmdparser as parser
 import cahirc as irc
 from random import shuffle
 from exceptions import NotPermitted
+from util import logtime
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +76,7 @@ class Game(object):
         self.irc.say(annc)
  
 
+    @logtime
     def play(self, player, cards):
         """ cards is an array of Card objects """
         if self.status != 'wait_answers':
@@ -310,11 +312,15 @@ class Game(object):
  
     def format_answer(self, cards):
         # TODO: add extra {}s on the end to add up to the PICK number
+        spaces = self.question.value.count('%s')
+        remain_space = len(cards) - spaces
         text = re.sub('%s', '{}', self.question.value)
         if isinstance(cards[0], Card):
             answers = [card.value for card in cards]
         else:
             answers = cards
+        if remain_space:
+            text += ' ' + ' '.join(['{}' for i in range(remain_space)])
         try:
             text = text.format(*answers)
         except IndexError as err:
