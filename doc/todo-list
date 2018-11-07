@@ -65,3 +65,6 @@ new player in game isn't dealt cards
 
 new player with no cards who attempts to play a non-existent card kills
 the bot with "card referenced before instantiated"
+
+on the announcement that prompts the czar to pick a winner, mention the
+czar's name
