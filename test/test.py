@@ -57,7 +57,7 @@ def run_command(game, command, user=None):
 def pick_answers(game, player):
     pick = game.question.pick
     cardslist = ' '.join([str(i) for i in range(pick)])
-    run_command(game, f'pick {cardslist}', user=player)
+    run_command(game, f'play {cardslist}', user=player)
 
 
 class CardTest(unittest.TestCase):
@@ -1142,11 +1142,11 @@ class GameIRCTest(unittest.TestCase):
         game.play(jim, jim.deal(1))
         played_annc = config['text']['en']['all_cards_played']
         self.assertTrue(re.search(played_annc,
-            str(cahirc.Cahirc.say.mock_calls[8])))
+            str(cahirc.Cahirc.say.mock_calls[10])))
         self.assertTrue(re.search('[0]', 
-                        str(cahirc.Cahirc.say.mock_calls[9])))
+                        str(cahirc.Cahirc.say.mock_calls[11])))
         self.assertTrue(re.search('[1]', 
-                        str(cahirc.Cahirc.say.mock_calls[10])))
+                        str(cahirc.Cahirc.say.mock_calls[12])))
 
     def test_irc_game(self):
         config = Config().data
@@ -1184,12 +1184,7 @@ class GameIRCTest(unittest.TestCase):
         game.add_player(bob)
         game.add_player(joe)
         game.add_player(jim)
-        num = game.question.pick
-        playstring = 'play {}'.format(' '.join([str(i) for i in range(num)]))
-        msg = FakeIRCmsg(playstring, user=joe)
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        pick_answers(game, joe)
         self.assertEqual('Joe', game.irc.destination)
 
     def test_early_play_is_ignored(self):
@@ -1238,13 +1233,10 @@ class GameIRCTest(unittest.TestCase):
         max_points = Config().data['max_points']
         i = 0
         while True:
-            print(f'** round {i}')
             i += 1
             for player in game.players:
                 pick_answers(game, player)
-            print(f'*** czar is {game.czar}')
             run_command(game, 'winner 0', user=game.czar)
-            print(cahirc.Cahirc.say.mock_calls[-1])
             for player in game.players:
                 points = player.get_score()[0]
                 name = player.nick
@@ -1280,12 +1272,6 @@ class GameIRCTest(unittest.TestCase):
     def test_czar_advances_through_all_players(self):
         game = start_game()
         for i in range(4):
-            # left off here
-            # there's some kind of wackiness around the czar here
-            # tied in to resetting game.answers.  if we don't reset
-            # game.answers, it all works fine, but somehow that's screwing
-            # up in round 3
-            print(f'round {i}')
             self.assertEqual(game.players[i%3], game.czar)
             for player in game.players:
                 pick_answers(game, player)
