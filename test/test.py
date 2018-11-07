@@ -54,6 +54,12 @@ def run_command(game, command, user=None):
     game.command(p)
 
 
+def pick_answers(game, player):
+    pick = game.question.pick
+    cardslist = ' '.join([str(i) for i in range(pick)])
+    run_command(game, f'pick {cardslist}', user=player)
+
+
 class CardTest(unittest.TestCase):
     def test_card(self):
         card = Card('Answer', 'Test card')
@@ -1230,12 +1236,15 @@ class GameIRCTest(unittest.TestCase):
     def test_end_game(self):
         game = start_game()
         max_points = Config().data['max_points']
+        i = 0
         while True:
-            pick = game.question.pick
-            cardslist = ' '.join([str(i) for i in range(pick)])
+            print(f'** round {i}')
+            i += 1
             for player in game.players:
-                run_command(game, f'pick {cardslist}', user=player)
+                pick_answers(game, player)
+            print(f'*** czar is {game.czar}')
             run_command(game, 'winner 0', user=game.czar)
+            print(cahirc.Cahirc.say.mock_calls[-1])
             for player in game.players:
                 points = player.get_score()[0]
                 name = player.nick
@@ -1259,7 +1268,28 @@ class GameIRCTest(unittest.TestCase):
         expected = str(call(CmdParser(game).get_commands()))
         self.assertEqual(expected, str(cahirc.Cahirc.say.mock_calls[-1]))
 
+    def test_second_play_allowed(self):
+        game = start_game()
+        pick_answers(game, game.players[1])
+        pick_answers(game, game.players[2])
+        run_command(game, 'winner 1', user=game.players[0])
+        pick_answers(game, game.players[2])
+        unexpected = str(call(game.get_text('already_played')))
+        self.assertNotEqual(unexpected, str(cahirc.Cahirc.say.mock_calls[-1]))
 
+    def test_czar_advances_through_all_players(self):
+        game = start_game()
+        for i in range(4):
+            # left off here
+            # there's some kind of wackiness around the czar here
+            # tied in to resetting game.answers.  if we don't reset
+            # game.answers, it all works fine, but somehow that's screwing
+            # up in round 3
+            print(f'round {i}')
+            self.assertEqual(game.players[i%3], game.czar)
+            for player in game.players:
+                pick_answers(game, player)
+            run_command(game, 'winner 0', user=game.czar)
 
 
 class ResponseTest(unittest.TestCase):
