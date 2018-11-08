@@ -59,11 +59,24 @@ give players feedback when picking a card
 alternately, the "you already played this round" counter isn't getting
 reset each round
 
-add sqlite database to track stats
-
+[finished]
 fix handling of questions without a %s in them (ie, answer at end)
+
+[finished]
+game winner announcement uses player instead of player.nick
+
+[finished]
+"you played this card" text is not privmsgd to a player
+
+add sqlite database to track stats
 
 new player in game isn't dealt cards
 
 new player with no cards who attempts to play a non-existent card kills
 the bot with "card referenced before instantiated"
+
+in round 14, i played BATTER, but still had it the next round. looks
+like this has happened multiple times, too.  write a test to check
+carefully that selected answers are really getting taken out of the
+player decks
+
