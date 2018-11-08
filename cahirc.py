@@ -9,6 +9,7 @@ from config import Config
 from player import Player
 from pycardbot import receive_msg
 import cmdparser as p
+from util import logtime
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +60,7 @@ class Cahirc(irc.bot.SingleServerIRCBot):
     # CAH specific functions
     #------------------------------------------------------------
 
+    @logtime
     def say(self, text):
         """ recipient is either the channel name, or the nick for a privmsg """
         logger.debug('Sending to {}: {}'.format(self.destination, text))

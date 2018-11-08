@@ -47,8 +47,9 @@ text:
     shutdown_message: "Whoops, gotta go. Later!"
     status_announcement: "Status: {czar} is the czar. Waiting for {players} to play."
     winner_announcement: "Winner is: {player} with \"{card}\"  {player} gets one point, and now has {points} points"
-    welcome_wait: "Welcome {name}! Waiting for {num} more {player_word} before starting"
+    welcome_join: "{name} is joining the game!"
     welcome_start: "Welcome {name}! Game starting. Type 'join' to join in!"
+    welcome_wait: "Welcome {name}! Waiting for {num} more {player_word} before starting"
     status:
       inactive: "No game is currently active. Type 'start' to start a new game."
       wait_answers: "Waiting for {players} to play their answer. Card on the table is: {question}"

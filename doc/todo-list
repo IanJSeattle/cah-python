@@ -51,15 +51,24 @@ when the current czar quits, re-assign the czar appropriately
 add a 'reload' command to reload the config file (cards are already
 reloaded for each new game)
 
-add sqlite database to track stats
-
+[finished]
 give players feedback when picking a card
 
-fix handling of questions without a %s in them (ie, answer at end)
-
+[finished]
 "reaper" and "reaper-dis" are treated as the same user.  wtf?
 alternately, the "you already played this round" counter isn't getting
 reset each round
+
+[finished]
+fix handling of questions without a %s in them (ie, answer at end)
+
+[finished]
+game winner announcement uses player instead of player.nick
+
+[finished]
+"you played this card" text is not privmsgd to a player
+
+add sqlite database to track stats
 
 new player in game isn't dealt cards
 
@@ -68,3 +77,8 @@ the bot with "card referenced before instantiated"
 
 on the announcement that prompts the czar to pick a winner, mention the
 czar's name
+
+in round 14, i played BATTER, but still had it the next round. looks
+like this has happened multiple times, too.  write a test to check
+carefully that selected answers are really getting taken out of the
+player decks

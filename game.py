@@ -12,6 +12,7 @@ import cmdparser as parser
 import cahirc as irc
 from random import shuffle
 from exceptions import NotPermitted
+from util import logtime
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +76,7 @@ class Game(object):
         self.irc.say(annc)
  
 
+    @logtime
     def play(self, player, cards):
         """ cards is an array of Card objects """
         if self.status != 'wait_answers':
@@ -89,7 +91,9 @@ class Game(object):
             else:
                 self.answers[player]['cards'] = cards
             answer = self.format_answer(self.answers[player]['cards'])
+            self.irc.destination = player.nick
             self.irc.say(self.get_text('answer_played').format(answer=answer))
+            self.irc.destination = self.irc.channel
         else:
             self.irc.say(self.get_text('already_played'))
             for i in range(self.question.pick):
@@ -169,6 +173,7 @@ class Game(object):
             msg = msg.format(czar=self.czar.nick)
             self.announce_answers(msg)
 
+    @logtime
     def winner(self, player:Player, args):
         """ record the winner of the round """
         if player != self.czar:
@@ -211,6 +216,11 @@ class Game(object):
             text = text.format(name=player.nick)
             self.irc.say(text)
             self.commence()
+        elif players >= min_players and self.status != 'wait_players':
+            text = self.get_text('welcome_join')
+            text = text.format(name=player.nick)
+            self.irc.say(text)
+            self.deal_one_player(player, self.config['hand_size'])
         else:
             text = self.get_text('welcome_wait')
             num = min_players - players
@@ -261,6 +271,7 @@ class Game(object):
         self.irc.say(card_annc.format(card=q_text))
         self.show_hands()
 
+    @logtime
     def load_cards(self):
         self.deck = Deck()
         currdir = os.getcwd()
@@ -279,6 +290,11 @@ class Game(object):
         logger.info(msg)
         func = getattr(self, parser.command)
         func(parser.player, parser.args)
+
+    def deal_one_player(self, player, num):
+        for i in range(num):
+            card = self.deck.deal('Answer')
+            player.add_card(card)
 
     def deal_all_players(self, num):
         for i in range(num):
@@ -310,11 +326,15 @@ class Game(object):
  
     def format_answer(self, cards):
         # TODO: add extra {}s on the end to add up to the PICK number
+        spaces = self.question.value.count('%s')
+        remain_space = len(cards) - spaces
         text = re.sub('%s', '{}', self.question.value)
         if isinstance(cards[0], Card):
             answers = [card.value for card in cards]
         else:
             answers = cards
+        if remain_space:
+            text += ' ' + ' '.join(['{}' for i in range(remain_space)])
         try:
             text = text.format(*answers)
         except IndexError as err:
@@ -366,7 +386,7 @@ class Game(object):
         max_points = self.config['max_points']
         for player in self.players:
             if player.get_score()[0] == max_points:
-                return player
+                return player.nick
         return None
 
 
