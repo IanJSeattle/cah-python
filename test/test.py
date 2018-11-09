@@ -254,7 +254,7 @@ class PlayerTest(unittest.TestCase):
         game = start_game()
         new_player = Player('Ann', '~anno')
         run_command(game, 'join', user=new_player)
-        self.assertEqual(game.config['hand_size'], len(new_player.deck))
+        self.assertEqual(game.config['hand_size'], len(game.players[-1].deck))
 
 
 class GameTest(unittest.TestCase):
