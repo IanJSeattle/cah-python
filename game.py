@@ -211,16 +211,17 @@ class Game(object):
             self.players.append(player)
         players = len(self.players)
         min_players = self.config['min_players']
+        game_states = ['wait_answers', 'wait_czar', 'announcing']
         if players >= min_players and self.status == 'wait_players':
             text = self.get_text('welcome_start')
             text = text.format(name=player.nick)
             self.irc.say(text)
             self.commence()
-        elif players >= min_players and self.status != 'wait_players':
+        elif players >= min_players and self.status in game_states:
+            self.deal_one_player(player, self.config['hand_size'])
             text = self.get_text('welcome_join')
             text = text.format(name=player.nick)
             self.irc.say(text)
-            self.deal_one_player(player, self.config['hand_size'])
         else:
             text = self.get_text('welcome_wait')
             num = min_players - players
@@ -295,6 +296,7 @@ class Game(object):
         for i in range(num):
             card = self.deck.deal('Answer')
             player.add_card(card)
+        cards = len(player.deck)
 
     def deal_all_players(self, num):
         for i in range(num):
