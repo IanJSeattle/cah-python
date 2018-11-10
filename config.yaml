@@ -24,6 +24,7 @@ text:
     all_cards_played: "Everyone has played. Here are the entries:"
     already_played: "You already played a card this round"
     answer_played: "You played: {answer}"
+    czar_pick: "{czar}, pick the winner!"
     double_join: "You are already in the game!"
     game_already_started: "Game has already been started"
     game_not_started: "Game hasn't started yet"
