@@ -222,6 +222,7 @@ class Game(object):
             text = self.get_text('welcome_join')
             text = text.format(name=player.nick)
             self.irc.say(text)
+            self.show_hand(player)
         else:
             text = self.get_text('welcome_wait')
             num = min_players - players
