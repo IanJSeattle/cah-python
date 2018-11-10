@@ -326,6 +326,7 @@ class Game(object):
         for i, player in enumerate(players):
             cards = self.answers[player]['cards']
             self.irc.say('[{}] {}'.format(i, self.format_answer(cards)))
+        self.irc.say(self.get_text('czar_pick').format(czar=self.czar.nick))
  
     def format_answer(self, cards):
         # TODO: add extra {}s on the end to add up to the PICK number
