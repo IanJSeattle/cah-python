@@ -1,0 +1,60 @@
+  File "pycardbot.py", line 52, in <module>
+    maingame.irc.start() # start call never returns
+  File "/home/reaper/devel/cah-python/cahirc.py", line 37, in start
+    super().start()
+  File "/usr/local/lib/python3.4/dist-packages/irc/bot.py", line 334, in
+start
+    super(SingleServerIRCBot, self).start()
+  File "/usr/local/lib/python3.4/dist-packages/irc/client.py", line
+1192, in start
+    self.reactor.process_forever()
+  File "/usr/local/lib/python3.4/dist-packages/irc/client.py", line 845,
+in process_forever
+    consume(infinite_call(one))
+  File
+"/usr/local/lib/python3.4/dist-packages/more_itertools/recipes.py", line
+160, in consume
+    deque(iterator, maxlen=0)
+  File "/usr/local/lib/python3.4/dist-packages/jaraco/itertools.py",
+line 413, in <genexpr>
+    return (f() for _ in itertools.repeat(None))
+  File "/usr/local/lib/python3.4/dist-packages/irc/client.py", line 826,
+in process_once
+    self.process_data(in_)
+  File "/usr/local/lib/python3.4/dist-packages/irc/client.py", line 790,
+in process_data
+    conn.process_data()
+  File "/usr/local/lib/python3.4/dist-packages/irc/client.py", line 274,
+in process_data
+    self._process_line(line)
+  File "/usr/local/lib/python3.4/dist-packages/irc/client.py", line 307,
+in _process_line
+    handler(arguments, command, source, tags)
+  File "/usr/local/lib/python3.4/dist-packages/irc/client.py", line 343,
+in _handle_message
+    self._handle_event(event)
+  File "/usr/local/lib/python3.4/dist-packages/irc/client.py", line 372,
+in _handle_event
+    self.reactor._handle_event(self, event)
+  File "/usr/local/lib/python3.4/dist-packages/irc/client.py", line 922,
+in _handle_event
+    result = handler.callback(connection, event)
+  File "/usr/local/lib/python3.4/dist-packages/irc/client.py", line
+1155, in _dispatcher
+    method(connection, event)
+  File "/home/reaper/devel/cah-python/cahirc.py", line 56, in on_pubmsg
+    receive_msg(self.game, IRCmsg(event))
+  File "/home/reaper/devel/cah-python/pycardbot.py", line 33, in
+receive_msg
+    parser.parse(msg)
+  File "/home/reaper/devel/cah-python/cmdparser.py", line 100, in parse
+    self.play_cards()
+  File "/home/reaper/devel/cah-python/cmdparser.py", line 124, in
+play_cards
+    self.player.deal(num)
+  File "/home/reaper/devel/cah-python/player.py", line 37, in deal
+    return self.deck.deal('Answer', num)
+  File "/home/reaper/devel/cah-python/deck.py", line 37, in deal
+    card = self.answercards.pop(num)
+IndexError: pop index out of range
+
