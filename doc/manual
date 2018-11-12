@@ -1,0 +1,224 @@
+# vi: set wm=9:
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+Introduction
+
+Welcome to the Dangerpants Labs pycardbot, a Python-based IRC bot for
+playing Cards Against Humanity, Apples to Apples, or any similar style
+of card game.
+
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+tl;dr: The Game for the Impatient
+
+If a game is not yet running, type:
+
+start
+
+If a game has been started, type:
+
+join
+
+To play a card as a normal player, type:
+
+pick 0
+or
+play 0
+
+To pick multiple cards, specify multiple numbers:
+
+play 1 4 8
+
+To pick a winner as the czar, type:
+
+pick 0
+or
+winner 0
+
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+Playing the Game
+
+The game is started by one player saying 'start' on the channel
+where pycardbot is listening.  There is no concept of elevated
+access in pycardbot, so anyone can start a game.
+
+At least two additional players need to join by saying 'join' on the
+channel.  Once there are three players, the game starts.  Additional
+players can join at any time, up to the configurable game limit.
+
+Once there are enough players, pycardbot will announce the question
+card on the table, and private-message each player with their cards.
+Note that the czar, who will pick the winner, does not receive a
+message with their cards, since that person can't play this round.
+
+Each player then picks an appropriate number of cards from their hand
+by typing 'pick N N N' or 'play N N N' where each N is a number as
+shown in your hand, and the number of numbers you need is determined by
+the question card for this round.
+
+Once everyone has submitted their choices, pycardbot announces the
+answers in random order.  The czar then picks their favorite answer by
+saying 'winner N'.  The czar rotates each round, so everyone gets to
+play and also pick winners.
+
+The game proceeds like this until one player reaches the configurable
+maximum points limit.  Once a player wins, the game announces the score
+and the winner, and stops the game.  A new game can be started again by
+saying 'start'.
+
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+Extra Commands
+
+There are some extra commands which you may find useful, beyond the
+bare playing of the game.
+
+state or status: Explain the current status of the game
+
+list or players: List the players currently in the game
+
+quit: Leave the game (applies to the player saying 'quit' only)
+
+reload: If there is no game in progress, reload the configuration file
+
+score or shame: Show everyone's current score
+
+help: Show a brief help blurb
+
+commands: List available commands
+
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+Configuration
+
+The configuration file is called config.yaml in the same directory
+where the pycardbot.py file lives.  Configuration is loaded when the
+bot starts, and any time the 'reload' command is run.
+
+Here are the configuration options currently defined:
+
+carddir: The directory (relative to where pycardbot.py lives) where
+card files are kept
+
+logfile: The file in which to write log lines (note: this is a straight
+file open command, doesn't hook into syslog)
+
+min_players: The minimum number of players before the game will start;
+although you could set it below 3, this number is primarily around to
+support bigger games
+
+max_players: The maximum number of players before the game will
+disallow new joins [not yet implemented]
+
+hand_size: The number of cards each player should have in a normal
+round; note that question cards with a higher 'pick' value than 1 will
+cause players to have extra cards
+
+max_points: The number of points necessary to win a game
+
+default_channel: The name of the IRC channel to join
+
+server: The name of the IRC server to connect to
+
+port: The port number to connect to (almost always 6667)
+
+my_nick: The name the bot should use on the channel
+
+language: The language code (can be any string) that should be used for
+text strings during the game
+
+text: Text strings used during the game (contains language codes)
+
+For the text strings, see the config.yaml file.  Note that if any
+strings are missing, the game is likely to malfunction.  To create a
+new language set, copy the existing block and replace the text.
+
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+How Cards Work
+
+The cardfiles are basic JSON files depicting an array of dicts, like
+so:
+
+[
+  {
+    "type": "Question",
+    "value": "Hilarious question about %s, OMG!",
+    "keep": "Yes",
+    "draw": 0,
+    "pick": 1,
+    "source": "Demo From Instructions"
+  },
+  {
+    "type": "Answer",
+    "value": "Raunchy thing, OMG",
+    "keep": "Yes",
+    "draw": 0,
+    "pick": 1,
+    "source": "Demo From Instructions"
+  }
+]
+
+Note that a card file can contain mixed questions and answers as shown,
+though most are organized with questions in one file, and answers in
+another.  Any file with a name that ends in .json will be loaded each
+time a new game starts (no need for a bot restart).
+
+pycardbot currently pays attention to and requires all the attributes
+except 'keep', which is ignored.  Although the 'source' attribute
+is saved inside the program, it's not currently used in the game.
+The 'draw' and 'pick' attributes are not used for Answer cards, but
+they're required to be present as the parser is currently written.
+
+For Question cards, a '%s' specifies where an answer card should go.
+If the card has fewer '%s' positions than its 'pick' attribute, any
+leftover picks will be added on to the end of the text.  So, if you
+have one '%s' but 'pick' set to 2 like this:
+
+  {
+    "type": "Question",
+    "value": "I always look forward to %s when the bossman isn't looking.",
+    "keep": "Yes",
+    "draw": 0,
+    "pick": 2,
+    "source": "Demo From Instructions"
+  },
+
+...then the user will be required to pick two answers; the first will
+be placed in the middle, where the %s is, and the second will be added
+on the end.
+
+The 'draw' attribute gives the user extra Answer cards (useful when you
+want to give them extra choices on a multi-answer Question card).
+
+If you're making new Answer cards, remember to use the right kind of
+phrasing: pick a couple Question cards from the default set, and see if
+your Answer could possibly make sense, or if it needs to be rephrased.
+For instance, 'I am Charlie Sheen' is not a very good Answer, but
+'Charlie Sheen' is.  Generally, an Answer wants to be a simple noun or
+a verbal phrase, like 'Eating all the chicken from the dumpster behind
+Chick-fil-a two hours after closing'.  Answers should usually be in the
+present tense.
+
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+Installation
+
+To install the bot, you need to download the code.  At some point in
+the near future, it will be available via GitHub, and the address will
+be printed here:
+
+[insert GitHub URL]
+
+pycardbot was written on a Linux system, and should work without
+modification on a Mac or any other modern Unix-y system.  Running
+on Windows may or may not work, and hasn't been tested.  It requires
+Python 3, at least 3.4 to run the bot, and at least 3.6 to run the
+tests.  You will most likely need to install additional modules for
+pycardbot to work: irc and pyaml.  The irc module is used to access
+IRC, and the pyaml module is used to read the config.yaml file.  To
+install these modules, you can run:
+
+pip3 install pyaml irc
+
+
