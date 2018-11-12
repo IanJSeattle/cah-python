@@ -24,6 +24,7 @@ text:
     all_cards_played: "Everyone has played. Here are the entries:"
     already_played: "You already played a card this round"
     answer_played: "You played: {answer}"
+    czar_pick: "{czar}, pick the winner!"
     double_join: "You are already in the game!"
     game_already_started: "Game has already been started"
     game_not_started: "Game hasn't started yet"
@@ -47,8 +48,9 @@ text:
     shutdown_message: "Whoops, gotta go. Later!"
     status_announcement: "Status: {czar} is the czar. Waiting for {players} to play."
     winner_announcement: "Winner is: {player} with \"{card}\"  {player} gets one point, and now has {points} points"
-    welcome_wait: "Welcome {name}! Waiting for {num} more {player_word} before starting"
+    welcome_join: "{name} is joining the game!"
     welcome_start: "Welcome {name}! Game starting. Type 'join' to join in!"
+    welcome_wait: "Welcome {name}! Waiting for {num} more {player_word} before starting"
     status:
       inactive: "No game is currently active. Type 'start' to start a new game."
       wait_answers: "Waiting for {players} to play their answer. Card on the table is: {question}"

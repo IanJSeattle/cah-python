@@ -91,7 +91,9 @@ class Game(object):
             else:
                 self.answers[player]['cards'] = cards
             answer = self.format_answer(self.answers[player]['cards'])
+            self.irc.destination = player.nick
             self.irc.say(self.get_text('answer_played').format(answer=answer))
+            self.irc.destination = self.irc.channel
         else:
             self.irc.say(self.get_text('already_played'))
             for i in range(self.question.pick):
@@ -171,6 +173,7 @@ class Game(object):
             msg = msg.format(czar=self.czar.nick)
             self.announce_answers(msg)
 
+    @logtime
     def winner(self, player:Player, args):
         """ record the winner of the round """
         if player != self.czar:
@@ -208,11 +211,18 @@ class Game(object):
             self.players.append(player)
         players = len(self.players)
         min_players = self.config['min_players']
+        game_states = ['wait_answers', 'wait_czar', 'announcing']
         if players >= min_players and self.status == 'wait_players':
             text = self.get_text('welcome_start')
             text = text.format(name=player.nick)
             self.irc.say(text)
             self.commence()
+        elif players >= min_players and self.status in game_states:
+            self.deal_one_player(player, self.config['hand_size'])
+            text = self.get_text('welcome_join')
+            text = text.format(name=player.nick)
+            self.irc.say(text)
+            self.show_hand(player)
         else:
             text = self.get_text('welcome_wait')
             num = min_players - players
@@ -263,6 +273,7 @@ class Game(object):
         self.irc.say(card_annc.format(card=q_text))
         self.show_hands()
 
+    @logtime
     def load_cards(self):
         self.deck = Deck()
         currdir = os.getcwd()
@@ -281,6 +292,12 @@ class Game(object):
         logger.info(msg)
         func = getattr(self, parser.command)
         func(parser.player, parser.args)
+
+    def deal_one_player(self, player, num):
+        for i in range(num):
+            card = self.deck.deal('Answer')
+            player.add_card(card)
+        cards = len(player.deck)
 
     def deal_all_players(self, num):
         for i in range(num):
@@ -309,6 +326,7 @@ class Game(object):
         for i, player in enumerate(players):
             cards = self.answers[player]['cards']
             self.irc.say('[{}] {}'.format(i, self.format_answer(cards)))
+        self.irc.say(self.get_text('czar_pick').format(czar=self.czar.nick))
  
     def format_answer(self, cards):
         # TODO: add extra {}s on the end to add up to the PICK number
@@ -372,7 +390,7 @@ class Game(object):
         max_points = self.config['max_points']
         for player in self.players:
             if player.get_score()[0] == max_points:
-                return player
+                return player.nick
         return None
 
 
