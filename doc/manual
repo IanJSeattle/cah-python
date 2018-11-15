@@ -8,6 +8,17 @@ of card game.
 
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+WARNING: OFFENSIVE CONTENT
+
+Cards Against Humanity contains many many cards which are inappropriate,
+non-PC, or just downright offensive.  That's the point.  If that sounds
+like something that would bother you, delete these files and never look
+back.  If you just want to use the bot without the offensive cards (to
+make up your own card-matching game, for instance), delete the files in
+the cards/ directory and replace them with your own.
+
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 tl;dr: The Game for the Impatient
 
 If a game is not yet running, type:
