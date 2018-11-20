@@ -86,3 +86,6 @@ like this has happened multiple times, too.  write a test to check
 carefully that selected answers are really getting taken out of the
 player decks -- test doesn't find the behavior now, and a quick
 playtest didn't see it either in a few rounds
+
+add '[pick 2] [draw 1]' to the end of multi-field cards.  logic: print
+this out if there's a draw value greater than zero.
