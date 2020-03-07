@@ -317,7 +317,7 @@ class GameTest(unittest.TestCase):
         # these shenanigans are because we need to save info before
         # the 'winner' command is run, or else the second round nukes the
         # verification data
-        winners = {player: game.format_answer(answers[player]['cards']) 
+        winners = {player: game.format_answer(answers[player]['cards'])
                    for player in answers}
         annc = game.get_text('winner_announcement')
         run_command(game, 'winner 0', user=game.players[0])
@@ -344,7 +344,7 @@ class GameTest(unittest.TestCase):
         self.assertEqual('wait_answers', game.status)
         run_command(game, 'start', user=bob)
         self.assertEqual('wait_answers', game.status)
-        self.assertEqual("call('{}')".format(text['game_already_started']), 
+        self.assertEqual("call('{}')".format(text['game_already_started']),
                             str(cahirc.Cahirc.say.mock_calls[-1]))
 
     def test_join_gives_a_message(self):
@@ -353,7 +353,7 @@ class GameTest(unittest.TestCase):
         game = Game()
         bob = Player('Bob', '~bobbo')
         run_command(game, 'join', user=bob)
-        self.assertEqual("call('{}')".format(text), 
+        self.assertEqual("call('{}')".format(text),
                          str(cahirc.Cahirc.say.mock_calls[-1])
                          .format(name='Bob', num='2', player_word='players'))
 
@@ -702,7 +702,7 @@ class CardsCmdTest(unittest.TestCase):
         expected = call(annc.format(cards=handstring))
         self.assertIn(str(expected), str(cahirc.Cahirc.say.mock_calls[-1]))
         self.assertEqual(player.nick, game.irc.destination)
-                      
+
 
     def test_cards_replays_question(self):
         config = Config().data
@@ -714,7 +714,7 @@ class CardsCmdTest(unittest.TestCase):
         game.command(p)
         question = game.question.formattedvalue
         annc = config['text']['en']['question_announcement']
-        annc = annc.format(card=question) 
+        annc = annc.format(card=question)
         expected = call(annc)
         self.assertEqual(str(expected), str(cahirc.Cahirc.say.mock_calls[-2]))
 
@@ -731,7 +731,7 @@ class CardsCmdTest(unittest.TestCase):
         game.command(p)
         self.assertEqual(call("Game hasn't started yet"),
                          cahirc.Cahirc.say.mock_calls[-1])
-        
+
 
 
 class ScoreCmdTest(unittest.TestCase):
@@ -768,7 +768,7 @@ class ScoreCmdTest(unittest.TestCase):
         game.players[2].points = 3
         def point_word(points):
             return 'point' if points == 1 else 'points'
-        string = [text.format(player=pl.nick, points=pl.points, 
+        string = [text.format(player=pl.nick, points=pl.points,
                               point_word=point_word(pl.points))
                               for pl in game.players]
         self.assertEqual(', '.join(string), game.score_list())
@@ -778,7 +778,7 @@ class ScoreCmdTest(unittest.TestCase):
         bob = Player('Bob', '~bobbo')
         run_command(game, 'score', user=bob)
         cahirc.Cahirc.say.assert_not_called()
-            
+
 
 class ReloadCmdTest(unittest.TestCase):
     def setUp(self):
@@ -1166,9 +1166,9 @@ class GameIRCTest(unittest.TestCase):
         played_annc = config['text']['en']['all_cards_played']
         self.assertTrue(re.search(played_annc,
             str(cahirc.Cahirc.say.mock_calls[10])))
-        self.assertTrue(re.search('[0]', 
+        self.assertTrue(re.search('[0]',
                         str(cahirc.Cahirc.say.mock_calls[11])))
-        self.assertTrue(re.search('[1]', 
+        self.assertTrue(re.search('[1]',
                         str(cahirc.Cahirc.say.mock_calls[12])))
 
     def test_irc_game(self):
@@ -1217,7 +1217,7 @@ class GameIRCTest(unittest.TestCase):
         run_command(game, 'start', user=bob)
         run_command(game, 'play 1', user=bob)
         text = Config().data['text']['en']['round_start']
-        self.assertEqual('call("{}")'.format(text), 
+        self.assertEqual('call("{}")'.format(text),
                          str(cahirc.Cahirc.say.mock_calls[-2]))
 
     def test_winner_triggers_second_round(self):
@@ -1342,7 +1342,7 @@ class CardHandlingTest(unittest.TestCase):
                     break
             if game.status == 'inactive':
                 break
-            
+
 class ResponseTest(unittest.TestCase):
     def test_round_num_displays(self):
         cahirc.Cahirc.say.reset_mock()
