@@ -12,7 +12,7 @@ max_points: 10 # number of points needed to win a round
 
 # IRC information
 default_channel: "#test"
-server: "irc.muppetlabs.com"
+server: "irc.domain.com"
 port: 6667
 my_nick: "pycardbot"
 
