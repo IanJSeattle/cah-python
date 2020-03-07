@@ -1,0 +1,58 @@
+# vi: set wm=0 ai ts=2 sw=2 expandtab:
+
+# directories
+carddir: cards
+logfile: cah.log
+
+# game information
+min_players: 3
+max_players: 10
+hand_size: 10
+max_points: 10 # number of points needed to win a round
+
+# IRC information
+default_channel: "#test"
+server: "irc.domain.com"
+port: 6667
+my_nick: "pycardbot"
+
+# text and localization
+language: en
+
+text:
+  en:
+    all_cards_played: "Everyone has played. Here are the entries:"
+    already_played: "You already played a card this round"
+    answer_played: "You played: {answer}"
+    czar_pick: "{czar}, pick the winner!"
+    double_join: "You are already in the game!"
+    game_already_started: "Game has already been started"
+    game_not_started: "Game hasn't started yet"
+    game_start: "The Dangerpants Labs pycardbot is online!  Say 'start' to start a game, 'help' for help, or 'commands' for a list of commands"
+    game_winner: "{player} has won with {points} points! {player} is officially the worst! The final score was {scores}"
+    help_blurb: "I am an IRC-based Cards Against Humanity bot. All commands are entered as the first word of the line. Card arguments are specified by number (eg, 'play 1' plays the card labelled [1] from your hand). Extraneous words are ignored. Type 'commands' for a list of commands. https://s3.amazonaws.com/cah/CAH_Rules.pdf lists CAH rules."
+    not_czar: "You're not the czar, wait your turn"
+    not_implemented: "This command is not yet implemented"
+    not_player: "You're the czar, you don't play this round"
+    player_list: "Players currently in the game: {players}"
+    player_hand: "Your cards are: {cards}"
+    player_played: "You played: {card}"
+    question_announcement: "Card: {card}"
+    quit_message: "{player} has left the game"
+    reload_announcement: "Reloading config files"
+    reload_wait: "Please wait until the game is over to reload the config"
+    round_announcement: "Round {round_num}! {czar} is the card czar"
+    round_start: "A new game is starting! Type 'join' to get in."
+    score_announcement: "The most horrible people: {scores}"
+    score_element: "{player} with {points} {point_word}"
+    shutdown_message: "Whoops, gotta go. Later!"
+    status_announcement: "Status: {czar} is the czar. Waiting for {players} to play."
+    winner_announcement: "Winner is: {player} with \"{card}\"  {player} gets one point, and now has {points} points"
+    welcome_join: "{name} is joining the game!"
+    welcome_start: "Welcome {name}! Game starting. Type 'join' to join in!"
+    welcome_wait: "Welcome {name}! Waiting for {num} more {player_word} before starting"
+    status:
+      inactive: "No game is currently active. Type 'start' to start a new game."
+      wait_answers: "Waiting for {players} to play their answer. Card on the table is: {question}"
+      wait_czar: "Waiting for {czar} to pick a winner. Hands played are:"
+      wait_players: "Waiting for players to join. Need {num} more to start."
