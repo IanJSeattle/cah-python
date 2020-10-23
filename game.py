@@ -9,7 +9,7 @@ from deck import Deck
 from card import Card
 from player import Player
 import cmdparser as parser
-import cahirc as irc
+import cahirc
 from random import shuffle
 from exceptions import NotPermitted
 from util import logtime
@@ -33,7 +33,7 @@ class Game(object):
         self.config = self.configobj.data
         self.lang = self.config['language']
         self.channel = self.config['default_channel']
-        self.irc = irc.Cahirc(self)
+        self.irc = cahirc.Cahirc(self)
 
     def __repr__(self):
         return ('Game round: {round}; status: {status}; czar: '
