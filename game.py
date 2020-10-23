@@ -80,10 +80,12 @@ class Game(object):
     def play(self, player, cards):
         """ cards is an array of Card objects """
         if self.status != 'wait_answers':
-            return
+            raise RuntimeError
+            #return
         if player == self.czar:
             self.irc.say(self.get_text('not_player'))
-            return
+            raise RuntimeError
+            #return
         if player not in self.answers:
             self.answers[player] = {}
             if type(cards) is not list:
@@ -98,7 +100,8 @@ class Game(object):
             self.irc.say(self.get_text('already_played'))
             for i in range(self.question.pick):
                 player.deck.undeal_last('Answer')
-            return
+            raise RuntimeError
+            #return
         if len(self.answers) == len(self.players) - 1:
             self.status = 'wait_czar'
             annc = self.get_text('all_cards_played')

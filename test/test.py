@@ -377,8 +377,8 @@ class PlayTest(unittest.TestCase):
         game.add_player(jim)
         game.play(jim, jim.deal(2))
         game.play(joe, joe.deal(1))
-        game.winner(joe)
-        self.assertEqual(1, joe.game_wins)
+        game.winner(bob, [0])
+        self.assertEqual(1, joe.points)
         
     def test_selecting_answer_moves_czar(self):
         game = gameclass.Game()
@@ -391,7 +391,7 @@ class PlayTest(unittest.TestCase):
         game.add_player(jim)
         game.play(jim, jim.deal(2))
         game.play(joe, joe.deal(1))
-        game.winner(jim)
+        game.winner(bob, [0])
         self.assertEqual(joe, game.czar)
 
 
@@ -654,9 +654,9 @@ class ResponseTest(unittest.TestCase):
         game.add_player(joe)
         game.add_player(jim)
         self.assertTrue(re.search("Round 1!",
-            str(gameclass.cahirc.Cahirc.say.mock_calls[1])))
+            str(gameclass.cahirc.Cahirc.say.mock_calls[4])))
         self.assertTrue(re.search("Bob is the card czar",
-            str(gameclass.cahirc.Cahirc.say.mock_calls[1])))
+            str(gameclass.cahirc.Cahirc.say.mock_calls[4])))
 
     def test_answers_are_displayed(self):
         game = gameclass.Game()
