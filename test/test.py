@@ -15,7 +15,7 @@ from player import Player
 import game as gameclass
 from cmdparser import CmdParser
 
-gameclass.cahirc.IRCBot.say = MagicMock()
+gameclass.cahirc.Cahirc.say = MagicMock()
 
 class CardTest(unittest.TestCase):
     def test_card(self):
@@ -537,7 +537,7 @@ class ConfigTest(unittest.TestCase):
 
 class GameIRCTest(unittest.TestCase):
     def setUp(self):
-        gameclass.cahirc.IRCBot.say.reset_mock()
+        gameclass.cahirc.Cahirc.say.reset_mock()
 
     def test_game_start_says_game_start(self):
         config = Config()
@@ -547,7 +547,7 @@ class GameIRCTest(unittest.TestCase):
         bob = Player('Bob')
         p = CmdParser('start', game, bob)
         game.command(p)
-        gameclass.cahirc.IRCBot.say.assert_called_with(chan, text)
+        gameclass.cahirc.Cahirc.say.assert_called_with(chan, text)
 
     def test_game_start_joining_works(self):
         game = gameclass.Game()
@@ -611,7 +611,7 @@ class GameIRCTest(unittest.TestCase):
         game.add_player(joe)
         game.add_player(jim)
         self.assertTrue(re.search('Card: ', 
-            str(gameclass.cahirc.IRCBot.say.mock_calls[2])))
+            str(gameclass.cahirc.Cahirc.say.mock_calls[2])))
 
     def test_joe_gets_cards(self):
         config = Config().data
@@ -624,7 +624,7 @@ class GameIRCTest(unittest.TestCase):
         game.add_player(joe)
         game.add_player(jim)
         self.assertTrue(re.search('Your cards are: ', 
-            str(gameclass.cahirc.IRCBot.say.mock_calls[3])))
+            str(gameclass.cahirc.Cahirc.say.mock_calls[3])))
 
     def test_candidates_are_announced(self):
         config = Config().data
@@ -640,7 +640,7 @@ class GameIRCTest(unittest.TestCase):
         game.play(jim, jim.deal(1))
         played_annc = config['text']['en']['all_cards_played']
         self.assertTrue(re.search(played_annc,
-            str(gameclass.cahirc.IRCBot.say.mock_calls[5])))
+            str(gameclass.cahirc.Cahirc.say.mock_calls[5])))
 
 
 class ResponseTest(unittest.TestCase):
@@ -654,9 +654,9 @@ class ResponseTest(unittest.TestCase):
         game.add_player(joe)
         game.add_player(jim)
         self.assertTrue(re.search("Round 1!",
-            str(gameclass.cahirc.IRCBot.say.mock_calls[1])))
+            str(gameclass.cahirc.Cahirc.say.mock_calls[1])))
         self.assertTrue(re.search("Bob is the card czar",
-            str(gameclass.cahirc.IRCBot.say.mock_calls[1])))
+            str(gameclass.cahirc.Cahirc.say.mock_calls[1])))
 
     def test_answers_are_displayed(self):
         game = gameclass.Game()
