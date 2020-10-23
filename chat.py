@@ -28,7 +28,7 @@ class CAHmsg:
 
 class Chat:
     """
-    module to allow generic access to chat systems.  this depends
+    class to allow generic access to chat systems.  this depends
     upon imported dialect modules implementing the same interface.
     allowed dialects:
     
