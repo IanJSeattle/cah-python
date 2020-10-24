@@ -6,8 +6,8 @@ should be relatively easy to adapt for other chat systems. """
 
 import json
 import config
-from game import Game
 import cmdparser as p
+from player import Player
 
 
 class CAHmsg:
@@ -25,6 +25,9 @@ class CAHmsg:
                            'message': self.message,
                            'source': self.source})
 
+    def make_player(self):
+        return Player(self.nick)
+
 
 class Chat:
     """
@@ -36,7 +39,7 @@ class Chat:
     * mattermost
     """
 
-    def __init__(self, dialect: str, game: Game):
+    def __init__(self, dialect: str, game):
         """ set up which type of interface we're using """
         if dialect == 'irc':
             import cahirc

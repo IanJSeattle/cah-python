@@ -14,6 +14,8 @@ from deck import Deck
 from player import Player
 import game as gameclass
 from cmdparser import CmdParser
+from chat import CAHmsg
+from exceptions import NoMoreCards
 
 gameclass.cahirc.Cahirc.say = MagicMock()
 
@@ -53,14 +55,14 @@ class DeckTest(unittest.TestCase):
     def test_init_with_answer_gives_no_questions(self):
         card = Card('Answer', 'Test card')
         deck = Deck([card])
-        with self.assertRaises(IndexError):
+        with self.assertRaises(NoMoreCards):
             newcard = deck.deal('Question')
 
     def test_adding_answer_gives_no_questions(self):
         card = Card('Answer', 'Test card')
         deck = Deck()
         deck.add(card)
-        with self.assertRaises(IndexError):
+        with self.assertRaises(NoMoreCards):
             newcard = deck.deal('Question')
 
     def test_dealing_card_removes_from_deck(self):
@@ -83,7 +85,7 @@ class DeckTest(unittest.TestCase):
         card = Card('Question', 'Test card')
         deck = Deck([card])
         newcard = deck.deal('Question')
-        with self.assertRaises(IndexError):
+        with self.assertRaises(NoMoreCards):
             newcard = deck.deal('Question')
 
     def test_dealing_given_card_works(self):
@@ -154,7 +156,7 @@ class DeckTest(unittest.TestCase):
 class PlayerTest(unittest.TestCase):
     def test_create_player_works(self):
         player = Player('Bob')
-        self.assertEqual('Bob', player.name)
+        self.assertEqual('Bob', player.nick)
 
     def test_record_win_works(self):
         player = Player('Bob')
@@ -209,7 +211,10 @@ class GameTest(unittest.TestCase):
 
     def test_commander_runs_start_command(self):
         game = gameclass.Game()
-        p = CmdParser('start', game)
+        cmdstring = 'start'
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
         game.command(p)
         self.assertEqual('wait_players', game.status)
 
@@ -222,7 +227,10 @@ class GameTest(unittest.TestCase):
         game.add_player(bob)
         game.add_player(jim)
         game.add_player(joe)
-        p = CmdParser('play 1', game, jim)
+        cmdstring = 'play 1'
+        msg = CAHmsg('Jim', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
         game.command(p)
         self.assertEqual(9, len(jim.show_hand()))
 
@@ -378,7 +386,8 @@ class PlayTest(unittest.TestCase):
         game.play(jim, jim.deal(2))
         game.play(joe, joe.deal(1))
         game.winner(bob, [0])
-        self.assertEqual(1, joe.points)
+        total_score = joe.points + jim.points
+        self.assertEqual(1, total_score)
         
     def test_selecting_answer_moves_czar(self):
         game = gameclass.Game()
@@ -399,13 +408,17 @@ class ParserTest(unittest.TestCase):
     def test_basic_command_works(self):
         game = gameclass.Game()
         cmdstring = 'start'
-        p = CmdParser(cmdstring, game)
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
         self.assertEqual('start', p.command)
 
     def test_one_argument_command_works(self):
         game = gameclass.Game()
         cmdstring = 'winner 1'
-        p = CmdParser(cmdstring, game)
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
         self.assertEqual('winner', p.command)
         self.assertEqual([1], p.args)
 
@@ -416,38 +429,53 @@ class ParserTest(unittest.TestCase):
     # expands out to cards.  we will only use the player version in
     # real life, but the numbers version is handy for testing.
 
+    # thinking these tests all need to use a CAHmsg instead of a string
+    # for the cmdstring argument.  that way, they have a msg.source for
+    # the parser to work with, as well as a nick to know who's
+    # speaking.
+
     def test_multi_argument_command(self):
         game = gameclass.Game()
         cmdstring = 'play 3 4 5'
-        p = CmdParser(cmdstring, game)
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
         self.assertEqual('play', p.command)
         self.assertEqual([3, 4, 5], p.args)
 
     def test_one_arg_with_garbage(self):
         game = gameclass.Game()
         cmdstring = 'winner 1 because we rock'
-        p = CmdParser(cmdstring, game)
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
         self.assertEqual('winner', p.command)
         self.assertEqual([1], p.args)
 
     def test_multi_arg_with_garbage(self):
         game = gameclass.Game()
         cmdstring = 'play 1 2 3 because ew'
-        p = CmdParser(cmdstring, game)
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
         self.assertEqual('play', p.command)
         self.assertEqual([1, 2, 3], p.args)
 
     def test_random_string(self):
         game = gameclass.Game()
         cmdstring = 'why is the sky blue?'
-        p = CmdParser(cmdstring, game)
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
         self.assertEqual(None, p.command)
         self.assertEqual([], p.args)
 
     def test_cmd_no_args(self):
         game = gameclass.Game()
         cmdstring = 'pick yourself up'
-        p = CmdParser(cmdstring, game)
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
         self.assertEqual(None, p.command)
         self.assertEqual([], p.args)
 
@@ -455,7 +483,9 @@ class ParserTest(unittest.TestCase):
         game = gameclass.Game()
         game.status = 'wait_answers'
         cmdstring = 'pick 1'
-        p = CmdParser(cmdstring, game)
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
         self.assertEqual('play', p.command)
         self.assertEqual([1], p.args)
 
@@ -463,17 +493,21 @@ class ParserTest(unittest.TestCase):
         game = gameclass.Game()
         game.status = 'wait_czar'
         cmdstring = 'pick 1'
-        p = CmdParser(cmdstring, game)
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
         self.assertEqual('winner', p.command)
         self.assertEqual([1], p.args)
 
     def test_shame_works_as_score(self):
         game = gameclass.Game()
         cmdstring = 'shame'
-        p = CmdParser(cmdstring, game)
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
         self.assertEqual('score', p.command)
         game.status = 'wait_czar'
-        p.parse(cmdstring)
+        p.parse(msg)
         self.assertEqual('score', p.command)
 
     def test_dealing_a_card_works(self):
@@ -487,7 +521,9 @@ class ParserTest(unittest.TestCase):
         game.add_player(jim)
         jimcard = jim.show_hand()[1]
         cmdstring = 'play 1'
-        p = CmdParser(cmdstring, game, jim)
+        msg = CAHmsg('Jim', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
         game.command(p)
         self.assertEqual([jimcard], game.answers[jim]['cards'])
 
@@ -502,7 +538,9 @@ class ParserTest(unittest.TestCase):
         game.add_player(jim)
         jimcards = jim.show_hand()[1:4]
         cmdstring = 'play 1 2 3'
-        p = CmdParser(cmdstring, game, jim)
+        msg = CAHmsg('Jim', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
         game.command(p)
         self.assertEqual(jimcards, game.answers[jim]['cards'])
 
@@ -520,7 +558,9 @@ class ParserTest(unittest.TestCase):
         jimcards.append(jim.show_hand()[1])
         jimcards.append(jim.show_hand()[7])
         cmdstring = 'play 3 1 7'
-        p = CmdParser(cmdstring, game, jim)
+        msg = CAHmsg('Jim', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
         game.command(p)
         self.assertEqual(jimcards, game.answers[jim]['cards'])
 
@@ -545,34 +585,48 @@ class GameIRCTest(unittest.TestCase):
         text = config.data['text']['en']['round_start']
         game = gameclass.Game()
         bob = Player('Bob')
-        p = CmdParser('start', game, bob)
+        cmdstring = 'start'
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
         game.command(p)
-        gameclass.cahirc.Cahirc.say.assert_called_with(chan, text)
+        self.assertTrue(re.search(text,
+            str(gameclass.cahirc.Cahirc.say.mock_calls[0])))
 
     def test_game_start_joining_works(self):
         game = gameclass.Game()
         # a person who says something on the channel is registered as a
         # Player for this exact situation
         bob = Player('Bob')
-        p = CmdParser('start', game, bob)
+        cmdstring = 'start'
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
         game.command(p)
-        self.assertEqual([bob], game.players)
+        self.assertEqual(str([bob]), str(game.players))
 
     def test_game_join_joining_works(self):
         game = gameclass.Game()
         bob = Player('Bob')
-        p = CmdParser('start', game, bob)
+        cmdstring = 'start'
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
         game.command(p)
+        cmdstring = 'join'
+        msg = CAHmsg('Jim', cmdstring, 'pubmsg')
         jim = Player('Jim')
-        p.parse('join')
-        p.player = jim
+        p.parse(msg)
         game.command(p)
-        self.assertEqual([bob, jim], game.players)
+        self.assertEqual(str([bob, jim]), str(game.players))
 
     def test_game_three_join_starts(self):
         game = gameclass.Game()
         bob = Player('Bob')
-        p = CmdParser('start', game, bob)
+        cmdstring = 'start'
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
         game.command(p)
         jim = Player('Jim')
         p.parse('join')
@@ -586,18 +640,19 @@ class GameIRCTest(unittest.TestCase):
 
     def test_game_three_join_starts(self):
         game = gameclass.Game()
-        bob = Player('Bob')
-        p = CmdParser('start', game, bob)
+        cmdstring = 'start'
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
         game.command(p)
-        jim = Player('Jim')
-        p.parse('join')
-        p.player = jim
+        cmdstring = 'join'
+        msg = CAHmsg('Jim', cmdstring, 'pubmsg')
+        p.parse(msg)
         game.command(p)
-        joe = Player('Joe')
-        p.parse('join')
-        p.player = joe
+        msg = CAHmsg('Joe', cmdstring, 'pubmsg')
+        p.parse(msg)
         game.command(p)
-        self.assertEqual(10, len(joe.show_hand()))
+        self.assertEqual(10, len(game.players[2].show_hand()))
 
     def test_first_question_displays(self):
         config = Config().data
@@ -611,7 +666,7 @@ class GameIRCTest(unittest.TestCase):
         game.add_player(joe)
         game.add_player(jim)
         self.assertTrue(re.search('Card: ', 
-            str(gameclass.cahirc.Cahirc.say.mock_calls[2])))
+            str(gameclass.cahirc.Cahirc.say.mock_calls[5])))
 
     def test_joe_gets_cards(self):
         config = Config().data
@@ -624,7 +679,7 @@ class GameIRCTest(unittest.TestCase):
         game.add_player(joe)
         game.add_player(jim)
         self.assertTrue(re.search('Your cards are: ', 
-            str(gameclass.cahirc.Cahirc.say.mock_calls[3])))
+            str(gameclass.cahirc.Cahirc.say.mock_calls[6])))
 
     def test_candidates_are_announced(self):
         config = Config().data
@@ -640,7 +695,7 @@ class GameIRCTest(unittest.TestCase):
         game.play(jim, jim.deal(1))
         played_annc = config['text']['en']['all_cards_played']
         self.assertTrue(re.search(played_annc,
-            str(gameclass.cahirc.Cahirc.say.mock_calls[5])))
+            str(gameclass.cahirc.Cahirc.say.mock_calls[10])))
 
 
 class ResponseTest(unittest.TestCase):

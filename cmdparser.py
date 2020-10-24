@@ -6,6 +6,7 @@ from collections import namedtuple
 import game
 from player import Player
 import cahirc as irc
+from chat import CAHmsg
 
 
 class CmdParser(object):
@@ -76,10 +77,10 @@ class CmdParser(object):
     def get_commands(self) -> str:
         return ', '.join(sorted(list(self.cmdattrs.keys())))
 
-    def parse(self, msg=None):
+    def parse(self, msg: CAHmsg=None):
         self.set_recipient(msg)
-        if msg.msg is not None:
-            self.string = msg.msg
+        if msg.message is not None:
+            self.string = msg.message
         if not self.is_command():
             self.command = None
             return
