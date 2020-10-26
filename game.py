@@ -13,6 +13,7 @@ import cahirc
 from random import shuffle
 from exceptions import NotPermitted
 from util import logtime
+import chat
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,7 @@ class Game(object):
         self.lang = self.config['language']
         self.channel = self.config['default_channel']
         self.irc = cahirc.Cahirc(self)
+        self.chat = chat.Chat('irc', self)
 
     def __repr__(self):
         return ('Game round: {round}; status: {status}; czar: '
@@ -45,25 +47,24 @@ class Game(object):
 
     def cards(self, player: Player=None, args=None) -> None:
         """ show a player's hand """
-        self.irc.destination = player.nick
         if self.status in ['inactive', 'wait_players']:
             self.irc.say(self.get_text('game_not_started'))
             return
         annc = self.get_text('question_announcement')
         annc = annc.format(card=self.question.formattedvalue)
-        self.irc.say(annc)
+        self.chat.say(player.nick, annc)
         self.show_hand(player)
 
     def commands(self, player, args):
-        self.irc.say(parser.CmdParser(self).get_commands())
+        self.chat.say(self.channel, parser.CmdParser(self).get_commands())
 
     def help(self, player, args):
-        self.irc.say(self.get_text('help_blurb'))
+        self.chat.say(self.channel, self.get_text('help_blurb'))
 
     def join(self, player, args):
         """ add a new player to the game """
         if player in self.players:
-            self.irc.say(self.get_text('double_join'))
+            self.chat.say(self.channel, self.get_text('double_join'))
         else:
             self.add_player(player)
 
@@ -144,7 +145,7 @@ class Game(object):
             self.irc.say(self.get_text('game_already_started'))
             return
         self.status = 'wait_players'
-        self.irc.say(self.get_text('round_start'))
+        self.chat.say(self.channel, self.get_text('round_start'))
         if player is not None:
             self.add_player(player)
         self.load_cards()
@@ -218,13 +219,13 @@ class Game(object):
         if players >= min_players and self.status == 'wait_players':
             text = self.get_text('welcome_start')
             text = text.format(name=player.nick)
-            self.irc.say(text)
+            self.chat.say(self.channel, text)
             self.commence()
         elif players >= min_players and self.status in game_states:
             self.deal_one_player(player, self.config['hand_size'])
             text = self.get_text('welcome_join')
             text = text.format(name=player.nick)
-            self.irc.say(text)
+            self.chat.say(self.channel, text)
             self.show_hand(player)
         else:
             text = self.get_text('welcome_wait')
@@ -232,7 +233,7 @@ class Game(object):
             player_word = 'players' if num > 1 else 'player'
             text = text.format(name=player.nick, num=num, 
                                player_word=player_word)
-            self.irc.say(text)
+            self.chat.say(self.channel, text)
 
     def get_player(self, nick: str) -> Player:
         for player in self.players:
@@ -272,8 +273,8 @@ class Game(object):
         round_annc = round_annc.format(round_num=self.round_num,
             czar=self.czar.nick)
         card_annc = self.get_text('question_announcement')
-        self.irc.say(round_annc)
-        self.irc.say(card_annc.format(card=q_text))
+        self.chat.say(round_annc)
+        self.chat.say(card_annc.format(card=q_text))
         self.show_hands()
 
     @logtime
@@ -345,10 +346,11 @@ class Game(object):
         try:
             text = text.format(*answers)
         except IndexError as err:
-            # TODO: replace this with logging calls
-            print('incorrect number of cards supplied')
-            print('cards: {}'.format(cards))
-            print('question: {}'.format(self.question.value))
+            pass
+            # TODO: replace these with logging calls
+            #print('incorrect number of cards supplied')
+            #print('cards: {}'.format(cards))
+            #print('question: {}'.format(self.question.value))
         return text
 
     def randomize_answers(self):
@@ -370,13 +372,10 @@ class Game(object):
             return
         hand = player.show_hand()
         annc = self.get_text('player_hand')
-        handstring = ''
-        i = 0
-        for card in hand:
-            handstring += '[{}] {} '.format(i, card)
-            i += 1
-        self.irc.destination = player.nick
-        self.irc.say(annc.format(cards=handstring))
+        handstring = ' '.join(['[{}] {}'.format(i, card) 
+            for i, card
+            in enumerate(hand)])
+        self.chat.say(player.nick, annc.format(cards=handstring))
 
     def score_list(self):
         max_points = self.config['max_points']

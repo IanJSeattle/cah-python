@@ -4,6 +4,7 @@
 import unittest, sys, os, re
 from unittest.mock import MagicMock
 from unittest.mock import patch
+from unittest.mock import call
 
 sys.path.append('..')
 sys.path.append('.')
@@ -18,6 +19,20 @@ from chat import CAHmsg
 from exceptions import NoMoreCards
 
 gameclass.cahirc.Cahirc.say = MagicMock()
+gameclass.chat.Chat.say = MagicMock()
+gameclass.chat.Chat.start = MagicMock()
+
+def setup_basic_game():
+    game = gameclass.Game()
+    bob = Player('Bob')
+    joe = Player('Joe')
+    jim = Player('Jim')
+    game.start()
+    game.add_player(bob)
+    game.add_player(joe)
+    game.add_player(jim)
+    return game, bob, joe, jim
+
 
 class CardTest(unittest.TestCase):
     def test_card(self):
@@ -220,13 +235,7 @@ class GameTest(unittest.TestCase):
 
     def test_commander_runs_play_command(self):
         game = gameclass.Game()
-        bob = Player('Bob')
-        jim = Player('Jim')
-        joe = Player('Joe')
-        game.start()
-        game.add_player(bob)
-        game.add_player(jim)
-        game.add_player(joe)
+        game, bob, joe, jim = setup_basic_game()
         cmdstring = 'play 1'
         msg = CAHmsg('Jim', cmdstring, 'pubmsg')
         p = CmdParser(game)
@@ -250,13 +259,7 @@ class GamePlayerTest(unittest.TestCase):
         self.assertEqual([bob], game.players)
 
     def test_first_player_is_czar(self):
-        game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
-        game.add_player(bob)
-        game.add_player(joe)
-        game.add_player(jim)
+        game, bob, joe, jim = setup_basic_game()
         self.assertEqual(bob, game.czar)
 
     def test_next_czar_works(self):
@@ -269,13 +272,7 @@ class GamePlayerTest(unittest.TestCase):
         self.assertEqual(joe, game.czar)
 
     def test_next_czar_loops(self):
-        game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
-        game.add_player(bob)
-        game.add_player(joe)
-        game.add_player(jim)
+        game, bob, joe, jim = setup_basic_game()
         self.assertEqual(joe, game.next_czar())
         self.assertEqual(jim, game.next_czar())
         self.assertEqual(bob, game.next_czar())
@@ -283,51 +280,23 @@ class GamePlayerTest(unittest.TestCase):
 
 class PlayTest(unittest.TestCase):
     def test_game_serves_question_card(self):
-        game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
-        game.start()
-        game.add_player(bob)
-        game.add_player(joe)
-        game.add_player(jim)
+        game, bob, joe, jim = setup_basic_game()
         self.assertEqual('wait_answers', game.status)
         self.assertIsNot(None, game.question)
 
     def test_game_deals_to_players(self):
-        game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
-        game.start()
-        game.add_player(bob)
-        game.add_player(joe)
-        game.add_player(jim)
+        game, bob, joe, jim = setup_basic_game()
         self.assertEqual(10, len(bob.show_hand()))
         self.assertEqual(10, len(joe.show_hand()))
         self.assertEqual(10, len(jim.show_hand()))
 
     def test_czar_answer_not_accepted(self):
-        game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
-        game.start()
-        game.add_player(bob)
-        game.add_player(joe)
-        game.add_player(jim)
+        game, bob, joe, jim = setup_basic_game()
         with self.assertRaises(RuntimeError):
             game.play(bob, bob.deal(1))
 
     def test_other_answers_accespted(self):
-        game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
-        game.start()
-        game.add_player(bob)
-        game.add_player(joe)
-        game.add_player(jim)
+        game, bob, joe, jim = setup_basic_game()
         joecard = joe.deal(2)
         jimcard = jim.deal(3)
         game.play(joe, joecard)
@@ -335,54 +304,26 @@ class PlayTest(unittest.TestCase):
         self.assertEqual(2, len(game.answers))
         
     def test_multiple_plays_not_allowed(self):
-        game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
-        game.start()
-        game.add_player(bob)
-        game.add_player(joe)
-        game.add_player(jim)
+        game, bob, joe, jim = setup_basic_game()
         game.play(jim, jim.deal(2))
         with self.assertRaises(RuntimeError):
             game.play(jim, jim.deal(1))
 
     def test_correct_status_once_all_played(self):
-        game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
-        game.start()
-        game.add_player(bob)
-        game.add_player(joe)
-        game.add_player(jim)
+        game, bob, joe, jim = setup_basic_game()
         game.play(jim, jim.deal(2))
         game.play(joe, joe.deal(1))
         self.assertEqual('wait_czar', game.status)
 
     def test_post_complete_plays_fail(self):
-        game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
-        game.start()
-        game.add_player(bob)
-        game.add_player(joe)
-        game.add_player(jim)
+        game, bob, joe, jim = setup_basic_game()
         game.play(jim, jim.deal(2))
         game.play(joe, joe.deal(1))
         with self.assertRaises(RuntimeError):
             game.play(jim, jim.deal(1))
 
     def test_selcting_answer_ups_score(self):
-        game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
-        game.start()
-        game.add_player(bob)
-        game.add_player(joe)
-        game.add_player(jim)
+        game, bob, joe, jim = setup_basic_game()
         game.play(jim, jim.deal(2))
         game.play(joe, joe.deal(1))
         game.winner(bob, [0])
@@ -390,14 +331,7 @@ class PlayTest(unittest.TestCase):
         self.assertEqual(1, total_score)
         
     def test_selecting_answer_moves_czar(self):
-        game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
-        game.start()
-        game.add_player(bob)
-        game.add_player(joe)
-        game.add_player(jim)
+        game, bob, joe, jim = setup_basic_game()
         game.play(jim, jim.deal(2))
         game.play(joe, joe.deal(1))
         game.winner(bob, [0])
@@ -511,14 +445,7 @@ class ParserTest(unittest.TestCase):
         self.assertEqual('score', p.command)
 
     def test_dealing_a_card_works(self):
-        game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
-        game.start()
-        game.add_player(bob)
-        game.add_player(joe)
-        game.add_player(jim)
+        game, bob, joe, jim = setup_basic_game()
         jimcard = jim.show_hand()[1]
         cmdstring = 'play 1'
         msg = CAHmsg('Jim', cmdstring, 'pubmsg')
@@ -528,14 +455,7 @@ class ParserTest(unittest.TestCase):
         self.assertEqual([jimcard], game.answers[jim]['cards'])
 
     def test_dealing_inorder_cards_works(self):
-        game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
-        game.start()
-        game.add_player(bob)
-        game.add_player(joe)
-        game.add_player(jim)
+        game, bob, joe, jim = setup_basic_game()
         jimcards = jim.show_hand()[1:4]
         cmdstring = 'play 1 2 3'
         msg = CAHmsg('Jim', cmdstring, 'pubmsg')
@@ -545,14 +465,7 @@ class ParserTest(unittest.TestCase):
         self.assertEqual(jimcards, game.answers[jim]['cards'])
 
     def test_dealing_wackorder_cards_works(self):
-        game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
-        game.start()
-        game.add_player(bob)
-        game.add_player(joe)
-        game.add_player(jim)
+        game, bob, joe, jim = setup_basic_game()
         jimcards = []
         jimcards.append(jim.show_hand()[3])
         jimcards.append(jim.show_hand()[1])
@@ -563,6 +476,20 @@ class ParserTest(unittest.TestCase):
         p.parse(msg)
         game.command(p)
         self.assertEqual(jimcards, game.answers[jim]['cards'])
+
+    def test_dupe_names_fail(self):
+        game, bob, joe, jim = setup_basic_game()
+        cmdstring = 'join'
+        # oops, we've already got a bob here...
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        config = Config()
+        channel = config.data['default_channel']
+        text = config.data['text']['en']['double_join']
+        expected = call(channel, text)
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
 
 
 class ConfigTest(unittest.TestCase):
@@ -575,153 +502,127 @@ class ConfigTest(unittest.TestCase):
         self.assertEqual('cards', config.data['carddir'])
 
 
-class GameIRCTest(unittest.TestCase):
+class GameChatTest(unittest.TestCase):
     def setUp(self):
-        gameclass.cahirc.Cahirc.say.reset_mock()
+        gameclass.chat.Chat.say.reset_mock()
 
-    def test_game_start_says_game_start(self):
+    def test_chat_says_something(self):
         config = Config()
         chan = config.data['default_channel']
         text = config.data['text']['en']['round_start']
         game = gameclass.Game()
-        bob = Player('Bob')
         cmdstring = 'start'
         msg = CAHmsg('Bob', cmdstring, 'pubmsg')
         p = CmdParser(game)
         p.parse(msg)
         game.command(p)
-        self.assertTrue(re.search(text,
-            str(gameclass.cahirc.Cahirc.say.mock_calls[0])))
+        expected = call(chan, text)
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[0])
 
-    def test_game_start_joining_works(self):
-        game = gameclass.Game()
-        # a person who says something on the channel is registered as a
-        # Player for this exact situation
-        bob = Player('Bob')
-        cmdstring = 'start'
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
-        self.assertEqual(str([bob]), str(game.players))
-
-    def test_game_join_joining_works(self):
-        game = gameclass.Game()
-        bob = Player('Bob')
-        cmdstring = 'start'
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
-        cmdstring = 'join'
-        msg = CAHmsg('Jim', cmdstring, 'pubmsg')
-        jim = Player('Jim')
-        p.parse(msg)
-        game.command(p)
-        self.assertEqual(str([bob, jim]), str(game.players))
-
-    def test_game_three_join_starts(self):
-        game = gameclass.Game()
-        bob = Player('Bob')
-        cmdstring = 'start'
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
-        jim = Player('Jim')
-        p.parse('join')
-        p.player = jim
-        game.command(p)
-        joe = Player('Joe')
-        p.parse('join')
-        p.player = joe
-        game.command(p)
-        self.assertEqual('wait_answers', game.status)
-
-    def test_game_three_join_starts(self):
-        game = gameclass.Game()
-        cmdstring = 'start'
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
-        cmdstring = 'join'
-        msg = CAHmsg('Jim', cmdstring, 'pubmsg')
-        p.parse(msg)
-        game.command(p)
+    def test_cards_command_uses_chat(self):
+        config = Config()
+        text = config.data['text']['en']['player_hand']
+        game, bob, joe, jim = setup_basic_game()
+        cmdstring = 'cards'
         msg = CAHmsg('Joe', cmdstring, 'pubmsg')
+        p = CmdParser(game)
         p.parse(msg)
         game.command(p)
-        self.assertEqual(10, len(game.players[2].show_hand()))
+        hand = joe.show_hand()
+        handstring = ' '.join(['[{}] {}'.format(i, card)
+            for i, card
+            in enumerate(hand)])
+        text = text.format(cards=handstring)
+        expected = call('Joe', text)
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
 
-    def test_first_question_displays(self):
-        config = Config().data
-        chan = config['default_channel']
-        game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
-        game.start()
-        game.add_player(bob)
-        game.add_player(joe)
-        game.add_player(jim)
-        self.assertTrue(re.search('Card: ', 
-            str(gameclass.cahirc.Cahirc.say.mock_calls[5])))
+    def test_commands_command_uses_chat(self):
+        config = Config()
+        channel = config.data['default_channel']
+        game, bob, joe, jim = setup_basic_game()
+        cmdstring = 'commands'
+        msg = CAHmsg('Joe', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        expected = call(channel, CmdParser(game).get_commands())
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
 
-    def test_joe_gets_cards(self):
-        config = Config().data
-        game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
-        game.start()
-        game.add_player(bob)
-        game.add_player(joe)
-        game.add_player(jim)
-        self.assertTrue(re.search('Your cards are: ', 
-            str(gameclass.cahirc.Cahirc.say.mock_calls[6])))
+    def test_help_command_uses_chat(self):
+        config = Config()
+        channel = config.data['default_channel']
+        help_blurb = config.data['text']['en']['help_blurb']
+        game, bob, joe, jim = setup_basic_game()
+        cmdstring = 'help'
+        msg = CAHmsg('Joe', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        expected = call(channel, help_blurb)
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
 
-    def test_candidates_are_announced(self):
-        config = Config().data
+    # TODO: write a test to exercise joining before the game starts, which
+    # seems to work, but shouldn't
+
+    def test_join_command_uses_chat(self):
+        config = Config()
+        channel = config.data['default_channel']
+        welcome_wait = config.data['text']['en']['welcome_wait']
+        num = 2
+        player_word = 'players' if num > 1 else 'player'
+        welcome_wait = welcome_wait.format(name='Bob', num=num, 
+            player_word=player_word)
         game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
-        game.start()
-        game.add_player(bob)
-        game.add_player(joe)
-        game.add_player(jim)
-        game.play(joe, joe.deal(1))
-        game.play(jim, jim.deal(1))
-        played_annc = config['text']['en']['all_cards_played']
-        self.assertTrue(re.search(played_annc,
-            str(gameclass.cahirc.Cahirc.say.mock_calls[10])))
+
+        # first attempt to join
+        cmdstring = 'start'
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        expected = call(channel, welcome_wait)
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
+
+        # second attempt to join (different message)
+        double_join = config.data['text']['en']['double_join']
+        cmdstring = 'join'
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p.parse(msg)
+        game.command(p)
+        expected = call(channel, double_join)
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
+
+        # third player joins
+        msg = CAHmsg('Joe', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        welcome_start = config.data['text']['en']['welcome_start']
+        welcome_start = welcome_start.format(name='Jim')
+        msg = CAHmsg('Jim', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        expected = call(channel, welcome_start)
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[4])
 
 
 class ResponseTest(unittest.TestCase):
+    def setUp(self):
+        gameclass.chat.Chat.say.reset_mock()
+
     def test_round_num_displays(self):
         game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
-        game.start()
-        game.add_player(bob)
-        game.add_player(joe)
-        game.add_player(jim)
+        game, bob, joe, jim = setup_basic_game()
         self.assertTrue(re.search("Round 1!",
-            str(gameclass.cahirc.Cahirc.say.mock_calls[4])))
+            str(gameclass.chat.Chat.say.mock_calls[4])))
         self.assertTrue(re.search("Bob is the card czar",
-            str(gameclass.cahirc.Cahirc.say.mock_calls[4])))
+            str(gameclass.chat.Chat.say.mock_calls[4])))
 
     def test_answers_are_displayed(self):
+        # TODO: this test is incomplete
         game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
-        jim = Player('Jim')
-        game.start()
-        game.add_player(bob)
-        game.add_player(joe)
-        game.add_player(jim)
+        game, bob, joe, jim = setup_basic_game()
         question = game.question
         game.play(joe, joe.deal(1))
         game.play(jim, jim.deal(1))

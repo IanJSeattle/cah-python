@@ -49,6 +49,9 @@ class Chat:
             self.system = cahmm.Cahmm(game)
         self.config = config.Config().data
         self.game = game
+
+    def start(self):
+        """ start the selected chat system. """
         # we expect start() to do everything with the chat system
         # necessary to be ready to start sending and receiving messages
         # with the system.  the system should furthermore handle
