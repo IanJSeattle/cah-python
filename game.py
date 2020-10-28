@@ -74,17 +74,19 @@ class Game(object):
         players = playerlist_format(playerlist)
         annc = self.get_text('player_list')
         annc = annc.format(players=players)
-        self.irc.say(annc)
+        self.chat.say(self.channel, annc)
  
 
     @logtime
     def play(self, player, cards):
         """ cards is an array of Card objects """
         if self.status != 'wait_answers':
+            # but why did i change all these to be RuntimeError?
+            # 20201027-era ian wants to know
             raise RuntimeError
             #return
         if player == self.czar:
-            self.irc.say(self.get_text('not_player'))
+            self.chat.say(self.channel, self.get_text('not_player'))
             raise RuntimeError
             #return
         if player not in self.answers:
@@ -94,11 +96,10 @@ class Game(object):
             else:
                 self.answers[player]['cards'] = cards
             answer = self.format_answer(self.answers[player]['cards'])
-            self.irc.destination = player.nick
-            self.irc.say(self.get_text('answer_played').format(answer=answer))
-            self.irc.destination = self.irc.channel
+            self.chat.say(player.nick, 
+                self.get_text('answer_played').format(answer=answer))
         else:
-            self.irc.say(self.get_text('already_played'))
+            self.chat.say(self.channel, self.get_text('already_played'))
             for i in range(self.question.pick):
                 player.deck.undeal_last('Answer')
             raise RuntimeError
@@ -116,17 +117,18 @@ class Game(object):
             if pl != player:
                 new_players.append(pl)
             else:
-                self.irc.say(text.format(player=player.nick))
+                self.chat.say(self.channel, text.format(player=player.nick))
         if new_players:
             self.players = new_players
         else:
             self.end_game()
             
     def reload(self, player, args):
-        """ reload config files (cards reload with each game) """
+        """ reload config files (cards reload with each new game) """
         if self.status != 'inactive':
-            self.irc.say(self.get_text('reload_wait'))
+            self.chat.say(self.channel, self.get_text('reload_wait'))
             return
+        self.chat.say(self.channel, self.get_text('reload_announcement'))
         self.configobj.reload()
         self.config = self.configobj.data
 
@@ -137,12 +139,12 @@ class Game(object):
         scores = self.score_list()
         text = self.get_text('score_announcement')
         text = text.format(scores=scores)
-        self.irc.say(text)
+        self.chat.say(self.channel, text)
 
     def start(self, player: Player=None, args=None) -> None:
         # args are not used in this function
         if self.status != 'inactive':
-            self.irc.say(self.get_text('game_already_started'))
+            self.chat.say(self.channel, self.get_text('game_already_started'))
             return
         self.status = 'wait_players'
         self.chat.say(self.channel, self.get_text('round_start'))
@@ -156,11 +158,11 @@ class Game(object):
         """ report current game state """
         text = self.get_text('status')
         if self.status == 'inactive':
-            self.irc.say(text['inactive'])
+            self.chat.say(self.channel, text['inactive'])
         elif self.status == 'wait_players':
             msg = text['wait_players']
             msg = msg.format(num=self.config['min_players']-len(self.players))
-            self.irc.say(msg)
+            self.chat.say(self.channel, msg)
         elif self.status == 'wait_answers':
             all_players = set([player.nick for player in self.players]) 
             played = set([player.nick for player in self.answers])
@@ -171,7 +173,7 @@ class Game(object):
             question = self.question.formattedvalue
             msg = text['wait_answers']
             msg = msg.format(players=players, question=question)
-            self.irc.say(msg)
+            self.chat.say(self.channel, msg)
         elif self.status == 'wait_czar':
             msg = text['wait_czar']
             msg = msg.format(czar=self.czar.nick)
@@ -253,7 +255,7 @@ class Game(object):
         self.answers = {}
         self.answer_order = {}
         self.deck = Deck()
-        self.irc.say(self.get_text('game_start'))
+        self.chat.say(self.channel, self.get_text('game_start'))
 
     def next_czar(self) -> None:
         self._czar += 1
@@ -325,12 +327,14 @@ class Game(object):
         self.irc.say(text)
 
     def announce_answers(self, text):
-        self.irc.say(text)
+        self.chat.say(self.channel, text)
         players = self.randomize_answers()
         for i, player in enumerate(players):
             cards = self.answers[player]['cards']
-            self.irc.say('[{}] {}'.format(i, self.format_answer(cards)))
-        self.irc.say(self.get_text('czar_pick').format(czar=self.czar.nick))
+            self.chat.say(self.channel, 
+                          '[{}] {}'.format(i, self.format_answer(cards)))
+        self.chat.say(self.channel, 
+                      self.get_text('czar_pick').format(czar=self.czar.nick))
  
     def format_answer(self, cards):
         # TODO: add extra {}s on the end to add up to the PICK number
@@ -417,6 +421,7 @@ class Game(object):
 
 
 def playerlist_format(playerlist):
+    playerlist = sorted(playerlist)
     size = len(playerlist)
     if size == 1:
         return playerlist[0]

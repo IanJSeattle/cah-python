@@ -606,6 +606,208 @@ class GameChatTest(unittest.TestCase):
         expected = call(channel, welcome_start)
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[4])
 
+    def test_list_command_uses_chat(self):
+        config = Config()
+        channel = config.data['default_channel']
+        game, bob, joe, jim = setup_basic_game()
+        cmdstring = 'list'
+        msg = CAHmsg('Joe', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        self.assertTrue(re.search("Players currently in the game:", 
+            str(gameclass.chat.Chat.say.mock_calls[-1])))
+
+    def test_play_command_uses_chat(self):
+        config = Config()
+        channel = config.data['default_channel']
+        game, bob, joe, jim = setup_basic_game()
+
+        # 'czar can't play' message
+        cmdstring = 'play 1'
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        with self.assertRaises(RuntimeError):
+            game.command(p)
+        expected = call(channel, game.get_text('not_player'))
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
+
+        # normal player plays
+        cmdstring = 'play 1'
+        msg = CAHmsg('Joe', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        answer = game.format_answer(game.answers[joe]['cards'])
+        expected = call('Joe', 
+            game.get_text('answer_played').format(answer=answer))
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
+
+        # normal player erroneously plays again
+        cmdstring = 'play 2'
+        msg = CAHmsg('Joe', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        with self.assertRaises(RuntimeError):
+            game.command(p)
+        answer = game.format_answer(game.answers[joe]['cards'])
+        expected = call(channel, game.get_text('already_played'))
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
+
+        # final player plays
+        cmdstring = 'play 2'
+        msg = CAHmsg('Jim', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        expected = call(channel, game.get_text('all_cards_played'))
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-4])
+
+    def test_quit_command_uses_chat(self):
+        config = Config()
+        channel = config.data['default_channel']
+        game, bob, joe, jim = setup_basic_game()
+
+        # normal quit
+        cmdstring = 'quit'
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        expected = call(channel, 
+                        game.get_text('quit_message').format(player='Bob'))
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
+
+        # game-ending quit
+        cmdstring = 'quit'
+        msg = CAHmsg('Jim', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        msg = CAHmsg('Joe', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        expected = call(channel, game.get_text('game_start'))
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
+
+    def test_reload_command_uses_chat(self):
+        config = Config()
+        channel = config.data['default_channel']
+
+        # reloading outside a running game works properly
+        game = gameclass.Game()
+        cmdstring = 'reload'
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        expected = call(channel, game.get_text('reload_announcement'))
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
+
+        # reload during a game tells you to wait
+        game, bob, joe, jim = setup_basic_game()
+        cmdstring = 'reload'
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        expected = call(channel, game.get_text('reload_wait'))
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
+
+    def test_score_command_uses_chat(self):
+        config = Config()
+        channel = config.data['default_channel']
+        game, bob, joe, jim = setup_basic_game()
+        bob.points = 3
+        joe.points = 2
+        jim.points = 5
+        cmdstring = 'score'
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        self.assertTrue(re.search("The most horrible people:", 
+            str(gameclass.chat.Chat.say.mock_calls[-1])))
+
+    def test_start_command_uses_chat(self):
+        config = Config()
+        channel = config.data['default_channel']
+        game, bob, joe, jim = setup_basic_game()
+        # the initial "start" command is already issued in setup_basic_game(),
+        # and is accounted for in all the various tests that use it
+        cmdstring = 'start'
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        expected = call(channel, game.get_text('game_already_started'))
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
+
+    def test_state_command_uses_chat(self):
+        config = Config()
+        channel = config.data['default_channel']
+
+        # inactive state
+        game = gameclass.Game()
+        cmdstring = 'state'
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        expected = call(channel, game.get_text('status')['inactive'])
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
+
+        # waiting for players
+        bob = Player('Bob')
+        joe = Player('Joe')
+        game.start()
+        game.add_player(bob)
+        game.add_player(joe)
+        cmdstring = 'state'
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        expected = call(channel, 
+            game.get_text('status')['wait_players'].format(num=1))
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
+
+        # wait_answers state
+        jim = Player('Jim')
+        game.add_player(jim)
+        cmdstring = 'state'
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        players = "Jim and Joe"
+        question = game.question.formattedvalue
+        expected = call(channel, 
+            game.get_text('status')['wait_answers'].format(players=players,
+                                                           question=question))
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
+
+        # wait_czar state
+        cmdstring = 'play 1'
+        msg = CAHmsg('Jim', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        msg = CAHmsg('Joe', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        cmdstring = 'state'
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        expected = call(channel, 
+            game.get_text('status')['wait_czar'].format(czar='Bob'))
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-4])
+
 
 class ResponseTest(unittest.TestCase):
     def setUp(self):
