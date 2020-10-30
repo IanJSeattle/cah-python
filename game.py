@@ -9,7 +9,6 @@ from deck import Deck
 from card import Card
 from player import Player
 import cmdparser as parser
-import cahirc
 from random import shuffle
 from exceptions import NotPermitted
 from util import logtime
@@ -34,7 +33,6 @@ class Game(object):
         self.config = self.configobj.data
         self.lang = self.config['language']
         self.channel = self.config['default_channel']
-        self.irc = cahirc.Cahirc(self)
         self.chat = chat.Chat('irc', self)
 
     def __repr__(self):
@@ -48,7 +46,7 @@ class Game(object):
     def cards(self, player: Player=None, args=None) -> None:
         """ show a player's hand """
         if self.status in ['inactive', 'wait_players']:
-            self.irc.say(self.get_text('game_not_started'))
+            self.chat.say(self.channel, self.get_text('game_not_started'))
             return
         annc = self.get_text('question_announcement')
         annc = annc.format(card=self.question.formattedvalue)
@@ -183,7 +181,7 @@ class Game(object):
     def winner(self, player:Player, args):
         """ record the winner of the round """
         if player != self.czar:
-            self.irc.say(self.get_text('not_czar'))
+            self.chat.say(self.channel, self.get_text('not_czar'))
             return
         answer_num = args[0]
         person = self.answer_order[answer_num]
@@ -207,9 +205,10 @@ class Game(object):
         game_winner = self.get_text('game_winner')
         score_element = self.get_text('score_element')
         scores = self.score_list()
-        self.irc.say(game_winner.format(player=self.get_game_winner(),
-                                        points=self.config['max_points'],
-                                        scores=scores))
+        self.chat.say(self.channel, 
+                      game_winner.format(player=self.get_game_winner(),
+                                         points=self.config['max_points'],
+                                         scores=scores))
 
     # guaranteed not to get a duplicate player
     def add_player(self, player):
@@ -275,8 +274,8 @@ class Game(object):
         round_annc = round_annc.format(round_num=self.round_num,
             czar=self.czar.nick)
         card_annc = self.get_text('question_announcement')
-        self.chat.say(round_annc)
-        self.chat.say(card_annc.format(card=q_text))
+        self.chat.say(self.channel, round_annc)
+        self.chat.say(self.channel, card_annc.format(card=q_text))
         self.show_hands()
 
     @logtime
@@ -324,7 +323,7 @@ class Game(object):
         text = text.format(player=player.nick,
             card=self.format_answer(self.answers[player]['cards']),
             points=player.points)
-        self.irc.say(text)
+        self.chat.say(self.channel, text)
 
     def announce_answers(self, text):
         self.chat.say(self.channel, text)

@@ -2,6 +2,10 @@
 
 import os
 import yaml
+try:
+    from yaml import CLoader as Loader, CDumper as Dumper
+except ImportError:
+    from yaml import Loader, Dumper
 
 class Config(object):
     """ instantiating this class reads in all the config files """
@@ -27,7 +31,7 @@ class Config(object):
             filename = '{}/config.yaml'.format(path)
             if os.path.isfile(filename):
                 with open(filename, 'r') as fp:
-                    data = yaml.load(fp.read())
+                    data = yaml.load(fp.read(), Loader=Loader)
                     self.data = data
                     self.check_config()
 

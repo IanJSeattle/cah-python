@@ -78,7 +78,6 @@ class CmdParser(object):
         return ', '.join(sorted(list(self.cmdattrs.keys())))
 
     def parse(self, msg: CAHmsg=None):
-        self.set_recipient(msg)
         if msg.message is not None:
             self.string = msg.message
         if not self.is_command():
@@ -123,12 +122,6 @@ class CmdParser(object):
         # now remove those cards from player's hand
         for num in nums:
             self.player.deal(num)
-
-    def set_recipient(self, msg):
-        if msg.source == 'privmsg':
-            self.game.irc.destination = msg.nick
-        else:
-            self.game.irc.destination = self.game.irc.channel
 
 
     #-----------------------------------------------------------------------

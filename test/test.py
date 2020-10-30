@@ -18,7 +18,6 @@ from cmdparser import CmdParser
 from chat import CAHmsg
 from exceptions import NoMoreCards
 
-gameclass.cahirc.Cahirc.say = MagicMock()
 gameclass.chat.Chat.say = MagicMock()
 gameclass.chat.Chat.start = MagicMock()
 
@@ -305,9 +304,12 @@ class PlayTest(unittest.TestCase):
         
     def test_multiple_plays_not_allowed(self):
         game, bob, joe, jim = setup_basic_game()
-        game.play(jim, jim.deal(2))
+        jim_hand = jim.show_hand()
+        pick = game.question.pick
+        cards = [jim.deal(num) for num in range(pick)]
+        game.play(jim, cards)
         with self.assertRaises(RuntimeError):
-            game.play(jim, jim.deal(1))
+            game.play(jim, cards)
 
     def test_correct_status_once_all_played(self):
         game, bob, joe, jim = setup_basic_game()
@@ -521,6 +523,19 @@ class GameChatTest(unittest.TestCase):
 
     def test_cards_command_uses_chat(self):
         config = Config()
+        channel = config.data['default_channel']
+
+        # first, when no game is running
+        game = gameclass.Game()
+        cmdstring = 'cards'
+        msg = CAHmsg('Joe', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        expected = call(channel, game.get_text('game_not_started'))
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
+
+        # then, with a real game going
         text = config.data['text']['en']['player_hand']
         game, bob, joe, jim = setup_basic_game()
         cmdstring = 'cards'
@@ -807,6 +822,44 @@ class GameChatTest(unittest.TestCase):
         expected = call(channel, 
             game.get_text('status')['wait_czar'].format(czar='Bob'))
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-4])
+
+    def test_winner_command_uses_chat(self):
+        config = Config()
+        channel = config.data['default_channel']
+
+        # setup for a non-czar to try picking the winner
+        game, bob, joe, jim = setup_basic_game()
+        cmdstring = 'play 1'
+        msg = CAHmsg('Jim', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        cmdstring = 'play 1'
+        msg = CAHmsg('Joe', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        cmdstring = 'winner 0'
+        msg = CAHmsg('Joe', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        expected = call(channel, game.get_text('not_czar'))
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
+
+        # now the czar picks
+        cmdstring = 'winner 0'
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        self.assertTrue(re.search('Winner is: ', 
+                                  str(gameclass.chat.Chat.say.mock_calls[-5])))
+        text = game.get_text('round_announcement')
+        text = text.format(round_num=2, czar='Joe')
+        expected = call(channel, text)
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-4])
+
 
 
 class ResponseTest(unittest.TestCase):
