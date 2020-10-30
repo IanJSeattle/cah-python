@@ -647,7 +647,8 @@ class GameChatTest(unittest.TestCase):
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
 
         # normal player plays
-        cmdstring = 'play 1'
+        card_nums = ' '.join([str(num) for num in range(game.question.pick)])
+        cmdstring = 'play {}'.format(card_nums)
         msg = CAHmsg('Joe', cmdstring, 'pubmsg')
         p = CmdParser(game)
         p.parse(msg)
@@ -658,7 +659,7 @@ class GameChatTest(unittest.TestCase):
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
 
         # normal player erroneously plays again
-        cmdstring = 'play 2'
+        cmdstring = 'play {}'.format(card_nums)
         msg = CAHmsg('Joe', cmdstring, 'pubmsg')
         p = CmdParser(game)
         p.parse(msg)
@@ -669,7 +670,7 @@ class GameChatTest(unittest.TestCase):
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
 
         # final player plays
-        cmdstring = 'play 2'
+        cmdstring = 'play {}'.format(card_nums)
         msg = CAHmsg('Jim', cmdstring, 'pubmsg')
         p = CmdParser(game)
         p.parse(msg)
