@@ -488,7 +488,7 @@ class ParserTest(unittest.TestCase):
         p.parse(msg)
         game.command(p)
         config = Config()
-        channel = config.data['default_channel']
+        channel = game.channel
         text = config.data['text']['en']['double_join']
         expected = call(channel, text)
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
@@ -510,9 +510,9 @@ class GameChatTest(unittest.TestCase):
 
     def test_chat_says_something(self):
         config = Config()
-        chan = config.data['default_channel']
         text = config.data['text']['en']['round_start']
         game = gameclass.Game()
+        chan = game.channel
         cmdstring = 'start'
         msg = CAHmsg('Bob', cmdstring, 'pubmsg')
         p = CmdParser(game)
@@ -523,10 +523,10 @@ class GameChatTest(unittest.TestCase):
 
     def test_cards_command_uses_chat(self):
         config = Config()
-        channel = config.data['default_channel']
 
         # first, when no game is running
         game = gameclass.Game()
+        channel = game.channel
         cmdstring = 'cards'
         msg = CAHmsg('Joe', cmdstring, 'pubmsg')
         p = CmdParser(game)
@@ -553,8 +553,8 @@ class GameChatTest(unittest.TestCase):
 
     def test_commands_command_uses_chat(self):
         config = Config()
-        channel = config.data['default_channel']
         game, bob, joe, jim = setup_basic_game()
+        channel = game.channel
         cmdstring = 'commands'
         msg = CAHmsg('Joe', cmdstring, 'pubmsg')
         p = CmdParser(game)
@@ -565,9 +565,9 @@ class GameChatTest(unittest.TestCase):
 
     def test_help_command_uses_chat(self):
         config = Config()
-        channel = config.data['default_channel']
         help_blurb = config.data['text']['en']['help_blurb']
         game, bob, joe, jim = setup_basic_game()
+        channel = game.channel
         cmdstring = 'help'
         msg = CAHmsg('Joe', cmdstring, 'pubmsg')
         p = CmdParser(game)
@@ -581,13 +581,13 @@ class GameChatTest(unittest.TestCase):
 
     def test_join_command_uses_chat(self):
         config = Config()
-        channel = config.data['default_channel']
         welcome_wait = config.data['text']['en']['welcome_wait']
         num = 2
         player_word = 'players' if num > 1 else 'player'
         welcome_wait = welcome_wait.format(name='Bob', num=num, 
             player_word=player_word)
         game = gameclass.Game()
+        channel = game.channel
 
         # first attempt to join
         cmdstring = 'start'
@@ -622,9 +622,8 @@ class GameChatTest(unittest.TestCase):
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[4])
 
     def test_list_command_uses_chat(self):
-        config = Config()
-        channel = config.data['default_channel']
         game, bob, joe, jim = setup_basic_game()
+        channel = game.channel
         cmdstring = 'list'
         msg = CAHmsg('Joe', cmdstring, 'pubmsg')
         p = CmdParser(game)
@@ -634,9 +633,8 @@ class GameChatTest(unittest.TestCase):
             str(gameclass.chat.Chat.say.mock_calls[-1])))
 
     def test_play_command_uses_chat(self):
-        config = Config()
-        channel = config.data['default_channel']
         game, bob, joe, jim = setup_basic_game()
+        channel = game.channel
 
         # 'czar can't play' message
         cmdstring = 'play 1'
@@ -680,9 +678,8 @@ class GameChatTest(unittest.TestCase):
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-4])
 
     def test_quit_command_uses_chat(self):
-        config = Config()
-        channel = config.data['default_channel']
         game, bob, joe, jim = setup_basic_game()
+        channel = game.channel
 
         # normal quit
         cmdstring = 'quit'
@@ -708,11 +705,9 @@ class GameChatTest(unittest.TestCase):
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
 
     def test_reload_command_uses_chat(self):
-        config = Config()
-        channel = config.data['default_channel']
-
         # reloading outside a running game works properly
         game = gameclass.Game()
+        channel = game.channel
         cmdstring = 'reload'
         msg = CAHmsg('Bob', cmdstring, 'pubmsg')
         p = CmdParser(game)
@@ -732,9 +727,8 @@ class GameChatTest(unittest.TestCase):
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
 
     def test_score_command_uses_chat(self):
-        config = Config()
-        channel = config.data['default_channel']
         game, bob, joe, jim = setup_basic_game()
+        channel = game.channel
         bob.points = 3
         joe.points = 2
         jim.points = 5
@@ -747,9 +741,8 @@ class GameChatTest(unittest.TestCase):
             str(gameclass.chat.Chat.say.mock_calls[-1])))
 
     def test_start_command_uses_chat(self):
-        config = Config()
-        channel = config.data['default_channel']
         game, bob, joe, jim = setup_basic_game()
+        channel = game.channel
         # the initial "start" command is already issued in setup_basic_game(),
         # and is accounted for in all the various tests that use it
         cmdstring = 'start'
@@ -761,11 +754,9 @@ class GameChatTest(unittest.TestCase):
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
 
     def test_state_command_uses_chat(self):
-        config = Config()
-        channel = config.data['default_channel']
-
         # inactive state
         game = gameclass.Game()
+        channel = game.channel
         cmdstring = 'state'
         msg = CAHmsg('Bob', cmdstring, 'pubmsg')
         p = CmdParser(game)
@@ -824,11 +815,9 @@ class GameChatTest(unittest.TestCase):
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-4])
 
     def test_winner_command_uses_chat(self):
-        config = Config()
-        channel = config.data['default_channel']
-
         # setup for a non-czar to try picking the winner
         game, bob, joe, jim = setup_basic_game()
+        channel = game.channel
         cmdstring = 'play 1'
         msg = CAHmsg('Jim', cmdstring, 'pubmsg')
         p = CmdParser(game)

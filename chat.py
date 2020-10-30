@@ -5,7 +5,6 @@ attempting to be generic and allowing dialect modules to be used, it
 should be relatively easy to adapt for other chat systems. """
 
 import json
-import config
 import cmdparser as p
 from player import Player
 
@@ -47,8 +46,8 @@ class Chat:
         elif dialect == 'mattermost':
             import cahmm
             self.system = cahmm.Cahmm(game)
-        self.config = config.Config().data
         self.game = game
+        self.channel = self.system.channel
 
     def start(self):
         """ start the selected chat system. """

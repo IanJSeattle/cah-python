@@ -32,8 +32,8 @@ class Game(object):
         self.configobj = config.Config()
         self.config = self.configobj.data
         self.lang = self.config['language']
-        self.channel = self.config['default_channel']
         self.chat = chat.Chat('irc', self)
+        self.channel = self.chat.channel
 
     def __repr__(self):
         return ('Game round: {round}; status: {status}; czar: '

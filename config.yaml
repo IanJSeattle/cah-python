@@ -10,11 +10,12 @@ max_players: 10
 hand_size: 10
 max_points: 10 # number of points needed to win a round
 
-# IRC information
-default_channel: "#test"
-server: "irc.domain.com"
-port: 6667
-my_nick: "pycardbot"
+chat:
+  irc:
+    default_channel: "#test"
+    server: "irc.domain.com"
+    port: 6667
+    my_nick: "pycardbot"
 
 # text and localization
 language: en

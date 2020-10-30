@@ -11,9 +11,8 @@ class Config(object):
     """ instantiating this class reads in all the config files """
 
     # the fields which are allowed in the config file
-    _fields = ['carddir', 'default_channel', 'my_nick', 'server', 'port',
-        'turns', 'min_players', 'max_players', 'text', 'language',
-        'hand_size', 'logfile', 'max_points']
+    _fields = ['carddir', 'chat', 'turns', 'min_players', 'max_players',
+                'text', 'language', 'hand_size', 'logfile', 'max_points']
 
     def __init__(self):
         self.path = ['.', '..'] # the last config.yaml found will win

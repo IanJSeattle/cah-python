@@ -19,12 +19,11 @@ class Cahirc(irc.bot.SingleServerIRCBot):
         self.game = game
         self.parser = p.CmdParser(game)
         port = config['port'] if 'port' in config else 6667
-        nickname = config['my_nick']
-        server = config['server']
-        port = config['port']
+        nickname = config['chat']['irc']['my_nick']
+        server = config['chat']['irc']['server']
+        port = config['chat']['irc']['port']
         super().__init__([(server, port)], nickname, nickname)
-        self.channel = config['default_channel']
-        self.destination = self.channel
+        self.channel = config['chat']['irc']['default_channel']
         self.started = False
 
     #------------------------------------------------------------
@@ -61,10 +60,10 @@ class Cahirc(irc.bot.SingleServerIRCBot):
     #------------------------------------------------------------
 
     @logtime
-    def say(self, text):
+    def say(self, destination, text):
         """ recipient is either the channel name, or the nick for a privmsg """
-        logger.debug('Sending to {}: {}'.format(self.destination, text))
-        self.connection.privmsg(self.destination, text)
+        logger.debug('Sending to {}: {}'.format(destination, text))
+        self.connection.privmsg(destination, text)
 
 
 class IRCmsg(object):
