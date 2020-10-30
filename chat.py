@@ -4,10 +4,12 @@ used agnostically.  other chat systems aren't currently in spec, but by
 attempting to be generic and allowing dialect modules to be used, it
 should be relatively easy to adapt for other chat systems. """
 
+import logging
 import json
 import cmdparser as p
 from player import Player
 
+logger = logging.getLogger(__name__)
 
 class CAHmsg:
     """ message object """
@@ -55,6 +57,7 @@ class Chat:
         # necessary to be ready to start sending and receiving messages
         # with the system.  the system should furthermore handle
         # reconnecting autonomously.
+        logger.info("Starting Chat subsystem")
         self.system.start()
 
     def say(self, destination: str, text: str) -> None:
@@ -69,3 +72,7 @@ class Chat:
         parser = p.CmdParser(self.game)
         parser.parse(msg)
         self.game.command(parser)
+
+    def stop(self, text: str="Shutting down") -> None:
+        """ shut down the chat system, with an optional message """
+        self.system.stop(text)

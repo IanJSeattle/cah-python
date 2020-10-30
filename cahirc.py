@@ -37,6 +37,9 @@ class Cahirc(irc.bot.SingleServerIRCBot):
             super().start()
             logger.info('IRC started')
 
+    def stop(self, text):
+        self.die(text)
+
     def on_nicknameinuse(self, connection, event):
         nick = connection.get_nickname()
         newnick = nick + '_'

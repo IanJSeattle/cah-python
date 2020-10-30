@@ -40,8 +40,8 @@ def signal_handler(sig, frame):
         logger.info('Sending shutdown message via IRC')
         lang = Config().data['language']
         shutdown_message = Config().data['text'][lang]['shutdown_message']
-        maingame.irc.say(shutdown_message)
-        maingame.irc.die('Shutting down')
+        maingame.chat.say(maingame.channel, shutdown_message)
+        maingame.chat.stop('Shutting down')
     else:
         logger.info('Unable to send shutdown message via IRC')
     sys.exit(0)
@@ -49,4 +49,4 @@ def signal_handler(sig, frame):
 
 if __name__ == '__main__':
     maingame = main()
-    maingame.irc.start() # start call never returns
+    maingame.chat.start() # start call never returns
