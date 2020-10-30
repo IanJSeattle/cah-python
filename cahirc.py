@@ -10,6 +10,7 @@ from player import Player
 from pycardbot import receive_msg
 import cmdparser as p
 from util import logtime
+import chat
 
 logger = logging.getLogger(__name__)
 
@@ -50,13 +51,13 @@ class Cahirc(irc.bot.SingleServerIRCBot):
     def on_welcome(self, connection, event):
         logger.info('Joining {}'.format(self.channel))
         connection.join(self.channel)
-        self.say(self.game.get_text('game_start'))
+        self.say(self.channel, self.game.get_text('game_start'))
 
     def on_privmsg(self, connection, event):
-        receive_msg(self.game, IRCmsg(event))
+        self.game.chat.receive_msg(chat.CAHmsg(event.source.nick, event.arguments[0], event.type))
 
     def on_pubmsg(self, connection, event):
-        receive_msg(self.game, IRCmsg(event))
+        self.game.chat.receive_msg(chat.CAHmsg(event.source.nick, event.arguments[0], event.type))
 
     #------------------------------------------------------------
     # CAH specific functions
