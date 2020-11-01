@@ -40,8 +40,9 @@ class Chat:
     * mattermost
     """
 
-    def __init__(self, dialect: str, game):
+    def __init__(self, game):
         """ set up which type of interface we're using """
+        dialect = game.config['chat']['dialect']
         if dialect == 'irc':
             import cahirc
             self.system = cahirc.Cahirc(game)

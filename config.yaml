@@ -11,11 +11,14 @@ hand_size: 10
 max_points: 10 # number of points needed to win a round
 
 chat:
+  dialect: irc # which type of chat to use: pick "irc" or "mattermost"
   irc:
     default_channel: "#test"
     server: "irc.domain.com"
     port: 6667
-    my_nick: "pycardbot"
+    my_nick: "cardbot"
+  mattermost:
+    conf_file: "mattermost_config.yaml"
 
 # text and localization
 language: en

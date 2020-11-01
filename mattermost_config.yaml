@@ -1,0 +1,7 @@
+ssl_verify: True
+bot_url: "https://mattermost.domain.com/api/v4"
+bot_token: "tokenstring"
+bot_team: "domain"
+webhook_id: "tokenstring"
+plugins: ['plugins']
+

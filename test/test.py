@@ -1,6 +1,14 @@
 #!/usr/bin/env python
 # vi:set expandtab ai:
 
+# TODO: write a test to exercise joining before the game starts, which
+# seems to work, but shouldn't
+
+# TODO: update the chat command to take a Player object rather than a
+# string.  this will allow the chat system to use either a nick or a
+# more precise user ID system as it prefers, without dictating how a
+# player should be identified.
+
 import unittest, sys, os, re
 from unittest.mock import MagicMock
 from unittest.mock import patch
@@ -575,9 +583,6 @@ class GameChatTest(unittest.TestCase):
         game.command(p)
         expected = call(channel, help_blurb)
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
-
-    # TODO: write a test to exercise joining before the game starts, which
-    # seems to work, but shouldn't
 
     def test_join_command_uses_chat(self):
         config = Config()
