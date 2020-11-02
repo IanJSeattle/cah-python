@@ -174,6 +174,7 @@ class Game(object):
             text = self.get_text('rando_enabled')
             text = text.format(rando=self.config['rando']['name'])
             self.chat.say(self.channel, text)
+            self.add_rando()
         logger.info('Starting new game')
 
     def state(self, player, args):
@@ -304,6 +305,8 @@ class Game(object):
         self.chat.say(self.channel, card_annc.format(card=q_text))
         self.show_hands()
         if self.config['rando']['active']:
+            if self.czar.nick == self.config['rando']['name']:
+                self.next_czar()
             self.play_rando()
 
     @logtime
@@ -324,7 +327,10 @@ class Game(object):
                                                      cmd=parser.command)
         logger.info(msg)
         func = getattr(self, parser.command)
-        func(parser.player, parser.args)
+        try:
+            func(parser.player, parser.args)
+        except RuntimeError:
+            pass
 
     def deal_one_player(self, player, num):
         for i in range(num):
@@ -426,16 +432,19 @@ class Game(object):
             if player.nick == self.config['rando']['name']:
                 rando = player
                 break
-        if not rando:
-            rando = Player(self.config['rando']['name'])
-            self.players.append(rando)
-            self.deal_one_player(rando, self.config['hand_size'])
         cards = [rando.deal(random.randint(0, len(rando.deck)-1))
                  for i in range(self.question.pick)]
         self.play(rando, cards)
         text = self.get_text('rando_played')
         text = text.format(rando=self.config['rando']['name'])
         self.chat.say(self.channel, text)
+
+    def add_rando(self):
+            rando = Player(self.config['rando']['name'])
+            self.players.append(rando)
+            self.deal_one_player(rando, self.config['hand_size'])
+            #self._czar += 1
+        
 
     #-----------------------------------------------------------------
     # getters and setters

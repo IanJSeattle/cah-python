@@ -13,7 +13,7 @@ max_points: 10 # number of points needed to win a round
 # the Rando Calrissian feature will add an extra player who plays random
 # answers every round
 rando:
-  active: False
+  active: True
   name: "Rando Calrissian"
 
 chat:
@@ -22,7 +22,7 @@ chat:
     default_channel: "#test"
     server: "irc.domain.com"
     port: 6667
-    my_nick: "cardbot"
+    my_nick: "pycardbot"
   mattermost:
     conf_file: "mattermost_config.yaml"
 

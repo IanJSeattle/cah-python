@@ -42,7 +42,8 @@ class CmdParser(object):
         # 'pick' aliases to 'play' most of the time so that the play()
         # function can deal with out of bound conditions
         Cmdalias = namedtuple('Cmdalias', 'alias command state')
-        self.aliases = [ Cmdalias('leave', 'quit', 'any'),
+        self.aliases = [ Cmdalias('join', 'start', 'inactive'),
+                         Cmdalias('leave', 'quit', 'any'),
                          Cmdalias('pick', 'winner', 'wait_czar'),
                          Cmdalias('pick', 'play', 'any'),
                          Cmdalias('players', 'list', 'any'),

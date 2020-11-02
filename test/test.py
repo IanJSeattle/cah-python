@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 # vi:set expandtab ai:
 
-# TODO: write a test to exercise joining before the game starts, which
-# seems to work, but shouldn't
-
-# TODO: update the chat command to take a Player object rather than a
+# TODO: update the say command to take a Player object rather than a
 # string.  this will allow the chat system to use either a nick or a
 # more precise user ID system as it prefers, without dictating how a
 # player should be identified.
@@ -35,6 +32,8 @@ def setup_basic_game(rando=False):
     game = gameclass.Game()
     if rando:
         game.config['rando']['active'] = True
+    else:
+        game.config['rando']['active'] = False
     bob = Player('Bob')
     joe = Player('Joe')
     jim = Player('Jim')
@@ -367,6 +366,9 @@ class PlayTest(unittest.TestCase):
 
 
 class ParserTest(unittest.TestCase):
+    def setUp(self):
+        gameclass.chat.Chat.say.reset_mock()
+
     def test_basic_command_works(self):
         game = gameclass.Game()
         cmdstring = 'start'
@@ -561,6 +563,18 @@ class ParserTest(unittest.TestCase):
         expected = call('Joe', text)
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
 
+    def test_join_before_start_just_starts(self):
+        game = gameclass.Game()
+        cmdstring = 'join'
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        text = game.get_text('round_start')
+        expected = call(game.channel, text)
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[0])
+
+
 
 class ConfigTest(unittest.TestCase):
     def test_config_exists_at_all(self):
@@ -652,6 +666,7 @@ class GameChatTest(unittest.TestCase):
         welcome_wait = welcome_wait.format(name='Bob', num=num, 
             player_word=player_word)
         game = gameclass.Game()
+        game.config['rando']['active'] = False
         channel = game.channel
 
         # first attempt to join
@@ -822,6 +837,7 @@ class GameChatTest(unittest.TestCase):
     def test_state_command_uses_chat(self):
         # inactive state
         game = gameclass.Game()
+        game.config['rando']['active'] = False
         channel = game.channel
         cmdstring = 'state'
         msg = CAHmsg('Bob', cmdstring, 'pubmsg')
@@ -927,6 +943,7 @@ class ResponseTest(unittest.TestCase):
 
     def test_round_num_displays(self):
         game = gameclass.Game()
+        game.config['rando']['active'] = False
         game, bob, joe, jim = setup_basic_game()
         self.assertTrue(re.search("Round 1!",
             str(gameclass.chat.Chat.say.mock_calls[4])))
@@ -953,7 +970,7 @@ class RandoCalrissianTest(unittest.TestCase):
         text = game.get_text('rando_played')
         text = text.format(rando=game.config['rando']['name'])
         expected = call(game.channel, text)
-        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-3])
 
     def test_no_rando_players(self):
         game, bob, joe, jim = setup_basic_game(rando=True)
@@ -1027,6 +1044,20 @@ class RandoCalrissianTest(unittest.TestCase):
         text = text.format(rando=game.config['rando']['name'])
         expected = call(game.channel, text)
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[1])
+
+    def test_rando_allows_two_player_games(self):
+        game = gameclass.Game()
+        game.config['rando']['active'] = True
+        for name in ['Bob', 'Joe']:
+            cmdstring = 'join'
+            msg = CAHmsg(name, cmdstring, 'pubmsg')
+            p = CmdParser(game)
+            p.parse(msg)
+            game.command(p)
+        text = game.get_text('question_announcement')
+        text = text.format(card=game.question.formattedvalue)
+        expected = call(game.channel, text)
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-3])
 
 
 class TheBigTest(unittest.TestCase):
