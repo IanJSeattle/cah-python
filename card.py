@@ -4,7 +4,7 @@ import re
 
 class Card(object):
     def __init__(self, cardtype, value):
-        self.cardtype = cardtype
+        self.cardtype = cardtype # either 'Question' or 'Answer'
         self.value = value
         self.draw = 0
         self.pick = 1

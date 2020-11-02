@@ -88,11 +88,22 @@ class Game(object):
             raise RuntimeError
             #return
         if player not in self.answers:
-            self.answers[player] = {}
             if type(cards) is not list:
-                self.answers[player]['cards'] = [cards]
+                cards = [cards]
             else:
-                self.answers[player]['cards'] = cards
+                cards = cards
+            if len(cards) != self.question.pick:
+                error_msg = self.get_text('card_num_wrong')
+                answer_word = 'answer'
+                if self.question.pick != 1:
+                    answer_word = 'answers'
+                error_msg = error_msg.format(num=self.question.pick,
+                                             answer_word=answer_word,
+                                             wrong_num=len(cards))
+                self.chat.say(self.channel, error_msg)
+                raise RuntimeError
+            self.answers[player] = {}
+            self.answers[player]['cards'] = cards
             answer = self.format_answer(self.answers[player]['cards'])
             self.chat.say(player.nick, 
                 self.get_text('answer_played').format(answer=answer))

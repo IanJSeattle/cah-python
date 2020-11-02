@@ -9,6 +9,8 @@
 # more precise user ID system as it prefers, without dictating how a
 # player should be identified.
 
+# TODO: write rando calrissian tests
+
 import unittest, sys, os, re
 from unittest.mock import MagicMock
 from unittest.mock import patch
@@ -243,6 +245,8 @@ class GameTest(unittest.TestCase):
     def test_commander_runs_play_command(self):
         game = gameclass.Game()
         game, bob, joe, jim = setup_basic_game()
+        game.question = Card('Question', '%s')
+        game.question.pick = 1
         cmdstring = 'play 1'
         msg = CAHmsg('Jim', cmdstring, 'pubmsg')
         p = CmdParser(game)
@@ -304,10 +308,11 @@ class PlayTest(unittest.TestCase):
 
     def test_other_answers_accespted(self):
         game, bob, joe, jim = setup_basic_game()
-        joecard = joe.deal(2)
-        jimcard = jim.deal(3)
-        game.play(joe, joecard)
-        game.play(jim, jimcard)
+        pick = game.question.pick
+        jim_cards = [jim.deal(num) for num in range(pick)]
+        joe_cards = [joe.deal(num) for num in range(pick)]
+        game.play(jim, jim_cards)
+        game.play(joe, joe_cards)
         self.assertEqual(2, len(game.answers))
         
     def test_multiple_plays_not_allowed(self):
@@ -321,12 +326,17 @@ class PlayTest(unittest.TestCase):
 
     def test_correct_status_once_all_played(self):
         game, bob, joe, jim = setup_basic_game()
-        game.play(jim, jim.deal(2))
-        game.play(joe, joe.deal(1))
+        pick = game.question.pick
+        jim_cards = [jim.deal(num) for num in range(pick)]
+        joe_cards = [joe.deal(num) for num in range(pick)]
+        game.play(jim, jim_cards)
+        game.play(joe, joe_cards)
         self.assertEqual('wait_czar', game.status)
 
     def test_post_complete_plays_fail(self):
         game, bob, joe, jim = setup_basic_game()
+        game.question = Card('Question', '%s')
+        game.question.pick = 1
         game.play(jim, jim.deal(2))
         game.play(joe, joe.deal(1))
         with self.assertRaises(RuntimeError):
@@ -334,16 +344,22 @@ class PlayTest(unittest.TestCase):
 
     def test_selcting_answer_ups_score(self):
         game, bob, joe, jim = setup_basic_game()
-        game.play(jim, jim.deal(2))
-        game.play(joe, joe.deal(1))
+        pick = game.question.pick
+        jim_cards = [jim.deal(num) for num in range(pick)]
+        joe_cards = [joe.deal(num) for num in range(pick)]
+        game.play(jim, jim_cards)
+        game.play(joe, joe_cards)
         game.winner(bob, [0])
         total_score = joe.points + jim.points
         self.assertEqual(1, total_score)
         
     def test_selecting_answer_moves_czar(self):
         game, bob, joe, jim = setup_basic_game()
-        game.play(jim, jim.deal(2))
-        game.play(joe, joe.deal(1))
+        pick = game.question.pick
+        jim_cards = [jim.deal(num) for num in range(pick)]
+        joe_cards = [joe.deal(num) for num in range(pick)]
+        game.play(jim, jim_cards)
+        game.play(joe, joe_cards)
         game.winner(bob, [0])
         self.assertEqual(joe, game.czar)
 
@@ -456,6 +472,8 @@ class ParserTest(unittest.TestCase):
 
     def test_dealing_a_card_works(self):
         game, bob, joe, jim = setup_basic_game()
+        game.question = Card('Question', '%s')
+        game.question.pick = 1
         jimcard = jim.show_hand()[1]
         cmdstring = 'play 1'
         msg = CAHmsg('Jim', cmdstring, 'pubmsg')
@@ -466,6 +484,8 @@ class ParserTest(unittest.TestCase):
 
     def test_dealing_inorder_cards_works(self):
         game, bob, joe, jim = setup_basic_game()
+        game.question = Card('Question', '%s %s %s')
+        game.question.pick = 3
         jimcards = jim.show_hand()[1:4]
         cmdstring = 'play 1 2 3'
         msg = CAHmsg('Jim', cmdstring, 'pubmsg')
@@ -476,6 +496,8 @@ class ParserTest(unittest.TestCase):
 
     def test_dealing_wackorder_cards_works(self):
         game, bob, joe, jim = setup_basic_game()
+        game.question = Card('Question', '%s %s %s')
+        game.question.pick = 3
         jimcards = []
         jimcards.append(jim.show_hand()[3])
         jimcards.append(jim.show_hand()[1])
@@ -500,6 +522,26 @@ class ParserTest(unittest.TestCase):
         text = config.data['text']['en']['double_join']
         expected = call(channel, text)
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
+
+    def test_play_command_rejects_quantity_errors(self):
+        config = Config()
+        game, bob, joe, jim = setup_basic_game()
+        channel = game.channel
+        game.question = Card('Question', 'foo is %s, bar is %s')
+        num = 2
+        game.question.pick = num
+
+        cmdstring = 'play 1'
+        msg = CAHmsg('Jim', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        with self.assertRaises(RuntimeError):
+            game.command(p)
+        text = config.data['text']['en']['card_num_wrong']
+        this_text = text.format(num=num, answer_word='answers', wrong_num=1)
+        expected = call(channel, this_text)
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
+        
 
 
 class ConfigTest(unittest.TestCase):
@@ -789,6 +831,8 @@ class GameChatTest(unittest.TestCase):
         # wait_answers state
         jim = Player('Jim')
         game.add_player(jim)
+        game.question.value = "%s is silly"
+        game.question.pick = 1
         cmdstring = 'state'
         msg = CAHmsg('Bob', cmdstring, 'pubmsg')
         p = CmdParser(game)
@@ -823,6 +867,8 @@ class GameChatTest(unittest.TestCase):
     def test_winner_command_uses_chat(self):
         # setup for a non-czar to try picking the winner
         game, bob, joe, jim = setup_basic_game()
+        game.question = Card('Question', '%s')
+        game.question.pick = 1
         channel = game.channel
         cmdstring = 'play 1'
         msg = CAHmsg('Jim', cmdstring, 'pubmsg')
@@ -873,6 +919,8 @@ class ResponseTest(unittest.TestCase):
         # TODO: this test is incomplete
         game = gameclass.Game()
         game, bob, joe, jim = setup_basic_game()
+        game.question = Card('Question', '%s')
+        game.question.pick = 1
         question = game.question
         game.play(joe, joe.deal(1))
         game.play(jim, jim.deal(1))
