@@ -12,7 +12,8 @@ class Config(object):
 
     # the fields which are allowed in the config file
     _fields = ['carddir', 'chat', 'turns', 'min_players', 'max_players',
-                'text', 'language', 'hand_size', 'logfile', 'max_points']
+                'text', 'language', 'hand_size', 'logfile', 'max_points',
+                'rando']
 
     def __init__(self):
         self.path = ['.', '..'] # the last config.yaml found will win

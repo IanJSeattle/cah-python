@@ -31,8 +31,10 @@ from exceptions import NoMoreCards
 gameclass.chat.Chat.say = MagicMock()
 gameclass.chat.Chat.start = MagicMock()
 
-def setup_basic_game():
+def setup_basic_game(rando=False):
     game = gameclass.Game()
+    if rando:
+        game.config['rando']['active'] = True
     bob = Player('Bob')
     joe = Player('Joe')
     jim = Player('Jim')
@@ -924,6 +926,91 @@ class ResponseTest(unittest.TestCase):
         question = game.question
         game.play(joe, joe.deal(1))
         game.play(jim, jim.deal(1))
+
+class RandoCalrissianTest(unittest.TestCase):
+    def setUp(self):
+        gameclass.chat.Chat.say.reset_mock()
+
+    def test_rando_plays(self):
+        game, bob, joe, jim = setup_basic_game(rando=True)
+        self.assertEqual(1, len(game.answers))
+        text = game.get_text('rando_played')
+        text = text.format(rando=game.config['rando']['name'])
+        expected = call(game.channel, text)
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
+
+    def test_no_rando_players(self):
+        game, bob, joe, jim = setup_basic_game(rando=True)
+        cmdstring = 'join'
+        name = game.config['rando']['name']
+        msg = CAHmsg(name, cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        text = game.get_text('no_rando_players')
+        text = text.format(rando=name)
+        expected = call(game.channel, text)
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
+
+    def test_rando_inactive_rando_ok(self):
+        game, bob, joe, jim = setup_basic_game(rando=False)
+        cmdstring = 'join'
+        name = game.config['rando']['name']
+        msg = CAHmsg(name, cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        text = game.get_text('welcome_join')
+        text = text.format(name=name)
+        expected = call(game.channel, text)
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-2])
+
+    def test_rando_never_czar(self):
+        game, bob, joe, jim = setup_basic_game(rando=True)
+        players = [bob, joe, jim]
+        czar = 0
+
+        # full rounds
+        for i in range(10):
+            players_set = set(players)
+            czar_set = set([players[czar]])
+            czar_name = players[czar].nick
+            round_players = list(players_set - czar_set)
+
+            # players in the round
+            for playername in round_players:
+                cards = ' '.join([str(num) 
+                                  for num 
+                                  in range(game.question.pick)])
+                cmdstring = f'play {cards}'
+                msg = CAHmsg(playername, cmdstring, 'pubmsg')
+                p = CmdParser(game)
+                p.parse(msg)
+                game.command(p)
+            cmdstring = f'winner 0'
+            msg = CAHmsg(czar_name, cmdstring, 'pubmsg')
+            p = CmdParser(game)
+            p.parse(msg)
+            game.command(p)
+            text = game.get_text('round_announcement')
+            czar = (czar + 1) % 3
+            czar_name = players[czar].nick
+            text = text.format(round_num=i+2, czar=czar_name)
+            expected = call(game.channel, text)
+            self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-5])
+        
+        # this is technically a separate test, but i didn't want to duplicate
+        # this big structure just to test this one little thing.
+        # here we're making sure rando doesn't get any privmsgs
+        for msg in gameclass.chat.Chat.say.mock_calls:
+            self.assertNotEqual(game.config['rando']['name'], msg[1][0], msg)
+
+    def test_rando_announces_himself(self):
+        game, bob, joe, jim = setup_basic_game(rando=True)
+        text = game.get_text('rando_enabled')
+        text = text.format(rando=game.config['rando']['name'])
+        expected = call(game.channel, text)
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[1])
 
 
 if __name__ == '__main__':

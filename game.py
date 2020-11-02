@@ -3,6 +3,7 @@
 import os
 import re
 import logging
+import random
 #from typing import List
 import config
 from deck import Deck
@@ -29,6 +30,7 @@ class Game(object):
         self.answers = {}
         self.answer_order = {}
         self.deck = Deck()
+        self.rando_player = None
         self.configobj = config.Config()
         self.config = self.configobj.data
         self.lang = self.config['language']
@@ -61,7 +63,12 @@ class Game(object):
 
     def join(self, player, args):
         """ add a new player to the game """
-        if player in self.players:
+        rando = self.config['rando']
+        if rando['active'] and player.nick == rando['name']:
+            text = self.get_text('no_rando_players')
+            text = text.format(rando=rando['name'])
+            self.chat.say(self.channel, text)
+        elif player in self.players:
             self.chat.say(self.channel, self.get_text('double_join'))
         else:
             self.add_player(player)
@@ -105,8 +112,10 @@ class Game(object):
             self.answers[player] = {}
             self.answers[player]['cards'] = cards
             answer = self.format_answer(self.answers[player]['cards'])
-            self.chat.say(player.nick, 
-                self.get_text('answer_played').format(answer=answer))
+            rando = self.config['rando']
+            if player.nick != rando['name'] or not rando['active']:
+                self.chat.say(player.nick,
+                    self.get_text('answer_played').format(answer=answer))
         else:
             self.chat.say(self.channel, self.get_text('already_played'))
             for i in range(self.question.pick):
@@ -161,6 +170,10 @@ class Game(object):
             self.add_player(player)
         self.load_cards()
         self.deck.shuffle()
+        if self.config['rando']['active']:
+            text = self.get_text('rando_enabled')
+            text = text.format(rando=self.config['rando']['name'])
+            self.chat.say(self.channel, text)
         logger.info('Starting new game')
 
     def state(self, player, args):
@@ -205,8 +218,8 @@ class Game(object):
             self.announce_game_winner()
             self.end_game()
         else:
-            self.start_round()
             self.answers = {}
+            self.start_round()
 
     #-----------------------------------------------------------------
     # methods
@@ -270,6 +283,8 @@ class Game(object):
     def next_czar(self) -> None:
         self._czar += 1
         self._czar %= len(self.players)
+        if self.czar.nick == self.config['rando']['name']:
+            return self.next_czar()
         return self.czar
 
     def commence(self) -> None:
@@ -288,6 +303,8 @@ class Game(object):
         self.chat.say(self.channel, round_annc)
         self.chat.say(self.channel, card_annc.format(card=q_text))
         self.show_hands()
+        if self.config['rando']['active']:
+            self.play_rando()
 
     @logtime
     def load_cards(self):
@@ -347,7 +364,6 @@ class Game(object):
                       self.get_text('czar_pick').format(czar=self.czar.nick))
  
     def format_answer(self, cards):
-        # TODO: add extra {}s on the end to add up to the PICK number
         spaces = self.question.value.count('%s')
         remain_space = len(cards) - spaces
         text = re.sub('%s', '{}', self.question.value)
@@ -357,14 +373,7 @@ class Game(object):
             answers = cards
         if remain_space:
             text += ' ' + ' '.join(['{}' for i in range(remain_space)])
-        try:
-            text = text.format(*answers)
-        except IndexError as err:
-            pass
-            # TODO: replace these with logging calls
-            #print('incorrect number of cards supplied')
-            #print('cards: {}'.format(cards))
-            #print('question: {}'.format(self.question.value))
+        text = text.format(*answers)
         return text
 
     def randomize_answers(self):
@@ -382,7 +391,9 @@ class Game(object):
             self.show_hand(player)
 
     def show_hand(self, player):
-        if player == self.czar:
+        rando = self.config['rando']
+        if player == self.czar or (rando['active'] and player.nick ==\
+            rando['name']):
             return
         hand = player.show_hand()
         annc = self.get_text('player_hand')
@@ -409,6 +420,22 @@ class Game(object):
                 return player.nick
         return None
 
+    def play_rando(self):
+        rando = None
+        for player in self.players:
+            if player.nick == self.config['rando']['name']:
+                rando = player
+                break
+        if not rando:
+            rando = Player(self.config['rando']['name'])
+            self.players.append(rando)
+            self.deal_one_player(rando, self.config['hand_size'])
+        cards = [rando.deal(random.randint(0, len(rando.deck)-1))
+                 for i in range(self.question.pick)]
+        self.play(rando, cards)
+        text = self.get_text('rando_played')
+        text = text.format(rando=self.config['rando']['name'])
+        self.chat.say(self.channel, text)
 
     #-----------------------------------------------------------------
     # getters and setters

@@ -1,14 +1,20 @@
 # vi: set wm=0 ai ts=2 sw=2 expandtab:
 
-# directories
+# directories and files
 carddir: cards
 logfile: cah.log
 
-# game information
+# game setup
 min_players: 3
 max_players: 10
 hand_size: 10
 max_points: 10 # number of points needed to win a round
+
+# the Rando Calrissian feature will add an extra player who plays random
+# answers every round
+rando:
+  active: False
+  name: "Rando Calrissian"
 
 chat:
   dialect: irc # which type of chat to use: pick "irc" or "mattermost"
@@ -36,6 +42,7 @@ text:
     game_start: "The Dangerpants Labs pycardbot is online!  Say 'start' to start a game, 'help' for help, or 'commands' for a list of commands"
     game_winner: "{player} has won with {points} points! {player} is officially the worst! The final score was {scores}"
     help_blurb: "I am a Cards Against Humanity bot. All commands are entered as the first word of the line. Card arguments are specified by number (eg, 'play 1' plays the card labelled [1] from your hand). Extraneous words are ignored. Type 'commands' for a list of commands. https://s3.amazonaws.com/cah/CAH_Rules.pdf lists CAH rules."
+    no_rando_players: "No players named '{rando}' allowed when the Rando feature is enabled.  Disable the Rando feature in the config file."
     not_czar: "You're not the czar, wait your turn"
     not_implemented: "This command is not yet implemented"
     not_player: "You're the czar, you don't play this round"
@@ -44,6 +51,8 @@ text:
     player_played: "You played: {card}"
     question_announcement: "Card: {card}"
     quit_message: "{player} has left the game"
+    rando_enabled: "{rando} will join in the next game"
+    rando_played: "{rando} has played"
     reload_announcement: "Reloading config files"
     reload_wait: "Please wait until the game is over to reload the config"
     round_announcement: "Round {round_num}! {czar} is the card czar"
