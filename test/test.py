@@ -9,7 +9,7 @@
 # more precise user ID system as it prefers, without dictating how a
 # player should be identified.
 
-# TODO: write rando calrissian tests
+# TODO: look into tracking player stats
 
 import unittest, sys, os, re
 from unittest.mock import MagicMock
@@ -387,9 +387,10 @@ class ParserTest(unittest.TestCase):
     # note weird hacky thing: there were lots of tests that depend upon
     # play returning a number, but play actually needs to return cards.
     # so, there are two different behaviors going here: the play cmd,
-    # without a player, just returns numbers.  with a player, it
-    # expands out to cards.  we will only use the player version in
-    # real life, but the numbers version is handy for testing.
+    # without the player being registered in the Game object, just returns 
+    # numbers.  with a player, it expands out to cards.  we will only
+    # use the player version in real life, but the numbers version is
+    # handy for testing.
 
     # thinking these tests all need to use a CAHmsg instead of a string
     # for the cmdstring argument.  that way, they have a msg.source for
@@ -543,7 +544,22 @@ class ParserTest(unittest.TestCase):
         this_text = text.format(num=num, answer_word='answers', wrong_num=1)
         expected = call(channel, this_text)
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
-        
+
+    def test_play_command_actually_expands_cards(self):
+        game, bob, joe, jim = setup_basic_game()
+        game.question.value = 'foo is %s'
+        game.question.pick = 1
+        answer = joe.deck.answercards[0].value
+        cmdstring = 'play 0'
+        msg = CAHmsg('Joe', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        answer_text = f'foo is {answer}'
+        text = game.get_text('player_played')
+        text = text.format(card=answer_text)
+        expected = call('Joe', text)
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
 
 
 class ConfigTest(unittest.TestCase):
@@ -1012,6 +1028,45 @@ class RandoCalrissianTest(unittest.TestCase):
         expected = call(game.channel, text)
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[1])
 
+
+class TheBigTest(unittest.TestCase):
+    def setUp(self):
+        gameclass.chat.Chat.say.reset_mock()
+
+    def test_full_game_minus_rando(self):
+        game, bob, joe, jim = setup_basic_game(rando=False)
+        players = [bob, joe, jim]
+        czar = 0
+
+        # full rounds
+        while True:
+            players_set = set(players)
+            czar_set = set([players[czar]])
+            czar_name = players[czar].nick
+            round_players = list(players_set - czar_set)
+
+            # players in the round
+            for playername in round_players:
+                cards = ' '.join([str(num) 
+                                  for num 
+                                  in range(game.question.pick)])
+                cmdstring = f'play {cards}'
+                msg = CAHmsg(playername.nick, cmdstring, 'pubmsg')
+                p = CmdParser(game)
+                p.parse(msg)
+                game.command(p)
+            cmdstring = 'winner 0'
+            msg = CAHmsg(czar_name, cmdstring, 'pubmsg')
+            p = CmdParser(game)
+            p.parse(msg)
+            game.command(p)
+            czar = (czar + 1) % 3
+
+            if game.status == 'inactive':
+                expected = call(game.channel, game.get_text('game_start'))
+                self.assertEqual(expected, 
+                                 gameclass.chat.Chat.say.mock_calls[-1])
+                break
 
 if __name__ == '__main__':
     unittest.main()
