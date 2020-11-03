@@ -540,8 +540,7 @@ class ParserTest(unittest.TestCase):
         msg = CAHmsg('Jim', cmdstring, 'pubmsg')
         p = CmdParser(game)
         p.parse(msg)
-        with self.assertRaises(RuntimeError):
-            game.command(p)
+        game.command(p)
         text = config.data['text']['en']['card_num_wrong']
         this_text = text.format(num=num, answer_word='answers', wrong_num=1)
         expected = call(channel, this_text)
@@ -721,8 +720,7 @@ class GameChatTest(unittest.TestCase):
         msg = CAHmsg('Bob', cmdstring, 'pubmsg')
         p = CmdParser(game)
         p.parse(msg)
-        with self.assertRaises(RuntimeError):
-            game.command(p)
+        game.command(p)
         expected = call(channel, game.get_text('not_player'))
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
 
@@ -743,8 +741,7 @@ class GameChatTest(unittest.TestCase):
         msg = CAHmsg('Joe', cmdstring, 'pubmsg')
         p = CmdParser(game)
         p.parse(msg)
-        with self.assertRaises(RuntimeError):
-            game.command(p)
+        game.command(p)
         answer = game.format_answer(game.answers[joe]['cards'])
         expected = call(channel, game.get_text('already_played'))
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
@@ -1058,6 +1055,62 @@ class RandoCalrissianTest(unittest.TestCase):
         text = text.format(card=game.question.formattedvalue)
         expected = call(game.channel, text)
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-3])
+
+    def test_rando_basic_command(self):
+        game, bob, jim, joe = setup_basic_game(rando=True)
+        cmdstring = 'rando'
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        text = game.get_text('rando_is_playing')
+        text = text.format(rando=game.config['rando']['name'])
+        expected = call(game.channel, text)
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-2])
+        text = game.get_text('rando_enabled')
+        text = text.format(rando=game.config['rando']['name'])
+        expected = call(game.channel, text)
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
+
+    def test_rando_basic_command_negative(self):
+        game, bob, jim, joe = setup_basic_game(rando=False)
+        cmdstring = 'rando'
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        text = game.get_text('rando_not_playing')
+        text = text.format(rando=game.config['rando']['name'])
+        expected = call(game.channel, text)
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-2])
+        text = game.get_text('rando_disabled')
+        text = text.format(rando=game.config['rando']['name'])
+        expected = call(game.channel, text)
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
+
+    def test_rando_enable_command(self):
+        game, bob, jim, joe = setup_basic_game(rando=True)
+        cmdstring = 'rando 1'
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        text = game.get_text('rando_enabled')
+        text = text.format(rando=game.config['rando']['name'])
+        expected = call(game.channel, text)
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
+
+    def test_rando_disable_command(self):
+        game, bob, jim, joe = setup_basic_game(rando=True)
+        cmdstring = 'rando 0'
+        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        p = CmdParser(game)
+        p.parse(msg)
+        game.command(p)
+        text = game.get_text('rando_disabled')
+        text = text.format(rando=game.config['rando']['name'])
+        expected = call(game.channel, text)
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
 
 
 class TheBigTest(unittest.TestCase):

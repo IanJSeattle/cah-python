@@ -21,9 +21,9 @@ class Cahirc(irc.bot.SingleServerIRCBot):
         self.parser = p.CmdParser(game)
         port = config['port'] if 'port' in config else 6667
         nickname = config['chat']['irc']['my_nick']
-        server = config['chat']['irc']['server']
-        port = config['chat']['irc']['port']
-        super().__init__([(server, port)], nickname, nickname)
+        self.server = config['chat']['irc']['server']
+        self.port = config['chat']['irc']['port']
+        super().__init__([(self.server, self.port)], nickname, nickname)
         self.channel = config['chat']['irc']['default_channel']
         self.started = False
 
@@ -33,7 +33,7 @@ class Cahirc(irc.bot.SingleServerIRCBot):
 
     def start(self):
         if not self.started:
-            logger.info('Starting IRC subsystem')
+            logger.info(f'IRC connecting to {self.server}:{self.port}')
             self.started = True
             super().start()
             logger.info('IRC started')

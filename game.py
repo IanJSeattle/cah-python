@@ -141,6 +141,41 @@ class Game(object):
         else:
             self.end_game()
             
+    def rando(self, player, options):
+        """ tell us if rando is active """
+        if not 'enabled' in self.config['rando']:
+            self.config['rando']['enabled'] = self.config['rando']['active']
+        if options:
+            if options[0] == 0:
+                text = self.get_text('rando_disabled')
+                text = text.format(rando=self.config['rando']['name'])
+                self.chat.say(self.channel, text)
+                self.config['rando']['enabled'] = False
+                return
+            else:
+                text = self.get_text('rando_enabled')
+                text = text.format(rando=self.config['rando']['name'])
+                self.chat.say(self.channel, text)
+                self.config['rando']['enabled'] = True
+                return
+        if self.status != 'inactive':
+            if self.config['rando']['active']:
+                text = self.get_text('rando_is_playing')
+                text = text.format(rando=self.config['rando']['name'])
+                self.chat.say(self.channel, text)
+            else:
+                text = self.get_text('rando_not_playing')
+                text = text.format(rando=self.config['rando']['name'])
+                self.chat.say(self.channel, text)
+        if self.config['rando']['enabled']:
+            text = self.get_text('rando_enabled')
+            text = text.format(rando=self.config['rando']['name'])
+            self.chat.say(self.channel, text)
+        else:
+            text = self.get_text('rando_disabled')
+            text = text.format(rando=self.config['rando']['name'])
+            self.chat.say(self.channel, text)
+
     def reload(self, player, args):
         """ reload config files (cards reload with each new game) """
         if self.status != 'inactive':
@@ -279,6 +314,8 @@ class Game(object):
         self.answers = {}
         self.answer_order = {}
         self.deck = Deck()
+        if 'enabled' in self.config['rando']:
+            self.config['rando']['active'] = self.config['rando']['enabled']
         self.chat.say(self.channel, self.get_text('game_start'))
 
     def next_czar(self) -> None:
@@ -289,6 +326,8 @@ class Game(object):
         return self.czar
 
     def commence(self) -> None:
+        if 'enabled' in self.config['rando']:
+            self.config['rando']['active'] = self.config['rando']['enabled']
         self.deal_all_players(self.config['hand_size'])
         self.start_round()
 
