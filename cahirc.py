@@ -2,6 +2,7 @@
 """ provides IRC services for the CAH bot. depends upon the irc library. """
 
 import logging
+import threading
 import irc.bot
 import irc.strings
 from irc.client import Event, NickMask
@@ -26,10 +27,17 @@ class Cahirc(irc.bot.SingleServerIRCBot):
         super().__init__([(self.server, self.port)], nickname, nickname)
         self.channel = config['chat']['irc']['default_channel']
         self.started = False
+        threading.Timer(20, self.ping).start()
 
     #------------------------------------------------------------
     # IRC bot functions
     #------------------------------------------------------------
+
+    def ping(self):
+        logger.info(f'PING {self.server}')
+        ping_interval = self.game.config['chat']['irc']['ping_interval']
+        self.connection.ping(self.server)
+        threading.Timer(ping_interval, self.ping).start()
 
     def start(self):
         if not self.started:

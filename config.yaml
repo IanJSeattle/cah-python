@@ -23,6 +23,7 @@ chat:
     server: "irc.domain.com"
     port: 6667
     my_nick: "pycardbot"
+    ping_interval: 120
   mattermost:
     conf_file: "mattermost_config.yaml"
 
