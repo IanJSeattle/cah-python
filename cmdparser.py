@@ -54,7 +54,6 @@ class CmdParser(object):
         # the maximum number of arguments any command can take
         self.max_args = 3
         self.game = game
-        self.ircmsg = None
         self._string = None
         self.player = None
         self.words = []
@@ -87,10 +86,10 @@ class CmdParser(object):
             return
         self.command = self.get_alias()
         if self.cmdattrs[self.command]:
-            self.player = self.game.get_player(msg.nick)
+            self.player = self.game.get_player(msg.player)
             registered = True
             if self.player == None:
-                self.player = msg.make_player()
+                self.player = msg.player
                 registered = False
             self.get_args()
             if self.args == [] and self.cmdattrs[self.command].required:

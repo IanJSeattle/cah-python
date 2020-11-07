@@ -5,8 +5,15 @@
 # string.  this will allow the chat system to use either a nick or a
 # more precise user ID system as it prefers, without dictating how a
 # player should be identified.
+#
+# the concept is that the chat subsystem will be required to deal with
+# creating and caring about players.  as long as it's a Player object,
+# the game is happy.
 
 # TODO: look into tracking player stats
+
+# TODO: fix opening "N players still needed" message when rando is
+# enabled
 
 import unittest, sys, os, re
 from unittest.mock import MagicMock
@@ -34,14 +41,20 @@ def setup_basic_game(rando=False):
         game.config['rando']['active'] = True
     else:
         game.config['rando']['active'] = False
-    bob = Player('Bob')
-    joe = Player('Joe')
-    jim = Player('Jim')
-    game.start()
-    game.add_player(bob)
-    game.add_player(joe)
-    game.add_player(jim)
+    bob = Player('Bob', 1)
+    joe = Player('Joe', 2)
+    jim = Player('Jim', 3)
+    parse_game_command(game, bob, 'start')
+    parse_game_command(game, joe, 'join')
+    parse_game_command(game, jim, 'join')
     return game, bob, joe, jim
+
+
+def parse_game_command(game, player, command):
+    msg = CAHmsg(player, command, 'pubmsg')
+    p = CmdParser(game)
+    p.parse(msg)
+    game.command(p)
 
 
 class CardTest(unittest.TestCase):
@@ -180,16 +193,16 @@ class DeckTest(unittest.TestCase):
 
 class PlayerTest(unittest.TestCase):
     def test_create_player_works(self):
-        player = Player('Bob')
+        player = Player('Bob', 1)
         self.assertEqual('Bob', player.nick)
 
     def test_record_win_works(self):
-        player = Player('Bob')
+        player = Player('Bob', 1)
         player.record_win()
         self.assertEqual((1, 0, 0), player.get_score())
 
     def test_record_game_win_works(self):
-        player = Player('Bob')
+        player = Player('Bob', 1)
         player.record_win()
         player.game_win()
         self.assertEqual((0, 1, 1), player.get_score())
@@ -201,12 +214,12 @@ class PlayerTest(unittest.TestCase):
         cards.append(Card('Answer', 'Card 2'))
         cards.append(Card('Answer', 'Card 3'))
         deck = Deck(cards)
-        player = Player('Bob')
+        player = Player('Bob', 1)
         player.deck = deck
         self.assertEqual(deck.show_hand('Answer'), player.show_hand())
 
     def test_add_card_works(self):
-        player = Player('Bob')
+        player = Player('Bob', 1)
         player.add_card(Card('Answer', 'Card 0'))
         player.add_card(Card('Answer', 'Card 1'))
         self.assertEqual(['Card 0', 'Card 1'], player.show_hand())
@@ -218,7 +231,7 @@ class PlayerTest(unittest.TestCase):
         cards.append(Card('Answer', 'Card 2'))
         cards.append(Card('Answer', 'Card 3'))
         deck = Deck(cards)
-        player = Player('Bob')
+        player = Player('Bob', 1)
         player.deck = deck
         self.assertEqual(player.deal(1).value, cards[1].value)
 
@@ -237,10 +250,8 @@ class GameTest(unittest.TestCase):
     def test_commander_runs_start_command(self):
         game = gameclass.Game()
         cmdstring = 'start'
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        bob = Player('Bob', 1)
+        parse_game_command(game, bob, cmdstring)
         self.assertEqual('wait_players', game.status)
 
     def test_commander_runs_play_command(self):
@@ -249,23 +260,20 @@ class GameTest(unittest.TestCase):
         game.question = Card('Question', '%s')
         game.question.pick = 1
         cmdstring = 'play 1'
-        msg = CAHmsg('Jim', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        parse_game_command(game, jim, cmdstring)
         self.assertEqual(9, len(jim.show_hand()))
 
 
 class GamePlayerTest(unittest.TestCase):
     def test_adding_player_does(self):
         game = gameclass.Game()
-        bob = Player('Bob')
+        bob = Player('Bob', 1)
         game.add_player(bob)
         self.assertEqual([bob], game.players)
 
     def test_adding_dupe_player_is_ignored(self):
         game = gameclass.Game()
-        bob = Player('Bob')
+        bob = Player('Bob', 1)
         game.add_player(bob)
         game.add_player(bob)
         self.assertEqual([bob], game.players)
@@ -276,8 +284,8 @@ class GamePlayerTest(unittest.TestCase):
 
     def test_next_czar_works(self):
         game = gameclass.Game()
-        bob = Player('Bob')
-        joe = Player('Joe')
+        bob = Player('Bob', 1)
+        joe = Player('Joe', 2)
         game.add_player(bob)
         game.add_player(joe)
         self.assertEqual(joe, game.next_czar())
@@ -289,6 +297,26 @@ class GamePlayerTest(unittest.TestCase):
         self.assertEqual(jim, game.next_czar())
         self.assertEqual(bob, game.next_czar())
 
+
+class PlayerInMsgTest(unittest.TestCase):
+    def setUp(self):
+        gameclass.chat.Chat.say.reset_mock()
+
+    def test_basic_game_setup(self):
+        game = gameclass.Game()
+        bob = Player('Bob', 1)
+        cmdstring = 'start'
+        parse_game_command(game, bob, cmdstring)
+        self.assertIn(bob, game.players)
+        joe = Player('Joe', 2)
+        cmdstring = 'join'
+        parse_game_command(game, joe, cmdstring)
+        self.assertIn(joe, game.players)
+        jim = Player('Jim', 2)
+        cmdstring = 'join'
+        parse_game_command(game, jim, cmdstring)
+        self.assertIn(jim, game.players)
+        self.assertEqual('wait_answers', game.status)
 
 class PlayTest(unittest.TestCase):
     def test_game_serves_question_card(self):
@@ -372,7 +400,8 @@ class ParserTest(unittest.TestCase):
     def test_basic_command_works(self):
         game = gameclass.Game()
         cmdstring = 'start'
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        bob = Player('Bob', 1)
+        msg = CAHmsg(bob, cmdstring, 'pubmsg')
         p = CmdParser(game)
         p.parse(msg)
         self.assertEqual('start', p.command)
@@ -380,7 +409,8 @@ class ParserTest(unittest.TestCase):
     def test_one_argument_command_works(self):
         game = gameclass.Game()
         cmdstring = 'winner 1'
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        bob = Player('Bob', 1)
+        msg = CAHmsg(bob, cmdstring, 'pubmsg')
         p = CmdParser(game)
         p.parse(msg)
         self.assertEqual('winner', p.command)
@@ -402,7 +432,8 @@ class ParserTest(unittest.TestCase):
     def test_multi_argument_command(self):
         game = gameclass.Game()
         cmdstring = 'play 3 4 5'
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        bob = Player('Bob', 1)
+        msg = CAHmsg(bob, cmdstring, 'pubmsg')
         p = CmdParser(game)
         p.parse(msg)
         self.assertEqual('play', p.command)
@@ -411,7 +442,8 @@ class ParserTest(unittest.TestCase):
     def test_one_arg_with_garbage(self):
         game = gameclass.Game()
         cmdstring = 'winner 1 because we rock'
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        bob = Player('Bob', 1)
+        msg = CAHmsg(bob, cmdstring, 'pubmsg')
         p = CmdParser(game)
         p.parse(msg)
         self.assertEqual('winner', p.command)
@@ -420,7 +452,8 @@ class ParserTest(unittest.TestCase):
     def test_multi_arg_with_garbage(self):
         game = gameclass.Game()
         cmdstring = 'play 1 2 3 because ew'
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        bob = Player('Bob', 1)
+        msg = CAHmsg(bob, cmdstring, 'pubmsg')
         p = CmdParser(game)
         p.parse(msg)
         self.assertEqual('play', p.command)
@@ -429,7 +462,8 @@ class ParserTest(unittest.TestCase):
     def test_random_string(self):
         game = gameclass.Game()
         cmdstring = 'why is the sky blue?'
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        bob = Player('Bob', 1)
+        msg = CAHmsg(bob, cmdstring, 'pubmsg')
         p = CmdParser(game)
         p.parse(msg)
         self.assertEqual(None, p.command)
@@ -438,7 +472,8 @@ class ParserTest(unittest.TestCase):
     def test_cmd_no_args(self):
         game = gameclass.Game()
         cmdstring = 'pick yourself up'
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        bob = Player('Bob', 1)
+        msg = CAHmsg(bob, cmdstring, 'pubmsg')
         p = CmdParser(game)
         p.parse(msg)
         self.assertEqual(None, p.command)
@@ -448,7 +483,8 @@ class ParserTest(unittest.TestCase):
         game = gameclass.Game()
         game.status = 'wait_answers'
         cmdstring = 'pick 1'
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        bob = Player('Bob', 1)
+        msg = CAHmsg(bob, cmdstring, 'pubmsg')
         p = CmdParser(game)
         p.parse(msg)
         self.assertEqual('play', p.command)
@@ -458,7 +494,8 @@ class ParserTest(unittest.TestCase):
         game = gameclass.Game()
         game.status = 'wait_czar'
         cmdstring = 'pick 1'
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        bob = Player('Bob', 1)
+        msg = CAHmsg(bob, cmdstring, 'pubmsg')
         p = CmdParser(game)
         p.parse(msg)
         self.assertEqual('winner', p.command)
@@ -467,7 +504,8 @@ class ParserTest(unittest.TestCase):
     def test_shame_works_as_score(self):
         game = gameclass.Game()
         cmdstring = 'shame'
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
+        bob = Player('Bob', 1)
+        msg = CAHmsg(bob, cmdstring, 'pubmsg')
         p = CmdParser(game)
         p.parse(msg)
         self.assertEqual('score', p.command)
@@ -481,10 +519,7 @@ class ParserTest(unittest.TestCase):
         game.question.pick = 1
         jimcard = jim.show_hand()[1]
         cmdstring = 'play 1'
-        msg = CAHmsg('Jim', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        parse_game_command(game, jim, cmdstring)
         self.assertEqual([jimcard], game.answers[jim]['cards'])
 
     def test_dealing_inorder_cards_works(self):
@@ -493,10 +528,7 @@ class ParserTest(unittest.TestCase):
         game.question.pick = 3
         jimcards = jim.show_hand()[1:4]
         cmdstring = 'play 1 2 3'
-        msg = CAHmsg('Jim', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        parse_game_command(game, jim, cmdstring)
         self.assertEqual(jimcards, game.answers[jim]['cards'])
 
     def test_dealing_wackorder_cards_works(self):
@@ -508,20 +540,14 @@ class ParserTest(unittest.TestCase):
         jimcards.append(jim.show_hand()[1])
         jimcards.append(jim.show_hand()[7])
         cmdstring = 'play 3 1 7'
-        msg = CAHmsg('Jim', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        parse_game_command(game, jim, cmdstring)
         self.assertEqual(jimcards, game.answers[jim]['cards'])
 
     def test_dupe_names_fail(self):
         game, bob, joe, jim = setup_basic_game()
         cmdstring = 'join'
         # oops, we've already got a bob here...
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        parse_game_command(game, bob, cmdstring)
         config = Config()
         channel = game.channel
         text = config.data['text']['en']['double_join']
@@ -537,10 +563,7 @@ class ParserTest(unittest.TestCase):
         game.question.pick = num
 
         cmdstring = 'play 1'
-        msg = CAHmsg('Jim', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        parse_game_command(game, jim, cmdstring)
         text = config.data['text']['en']['card_num_wrong']
         this_text = text.format(num=num, answer_word='answers', wrong_num=1)
         expected = call(channel, this_text)
@@ -552,10 +575,7 @@ class ParserTest(unittest.TestCase):
         game.question.pick = 1
         answer = joe.deck.answercards[0].value
         cmdstring = 'play 0'
-        msg = CAHmsg('Joe', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        parse_game_command(game, joe, cmdstring)
         answer_text = f'foo is {answer}'
         text = game.get_text('player_played')
         text = text.format(card=answer_text)
@@ -565,10 +585,8 @@ class ParserTest(unittest.TestCase):
     def test_join_before_start_just_starts(self):
         game = gameclass.Game()
         cmdstring = 'join'
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        bob = Player('Bob', 1)
+        parse_game_command(game, bob, cmdstring)
         text = game.get_text('round_start')
         expected = call(game.channel, text)
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[0])
@@ -595,10 +613,8 @@ class GameChatTest(unittest.TestCase):
         game = gameclass.Game()
         chan = game.channel
         cmdstring = 'start'
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        bob = Player('Bob', 1)
+        parse_game_command(game, bob, cmdstring)
         expected = call(chan, text)
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[0])
 
@@ -609,10 +625,8 @@ class GameChatTest(unittest.TestCase):
         game = gameclass.Game()
         channel = game.channel
         cmdstring = 'cards'
-        msg = CAHmsg('Joe', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        joe = Player('Joe', 2)
+        parse_game_command(game, joe, cmdstring)
         expected = call(channel, game.get_text('game_not_started'))
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
 
@@ -620,10 +634,7 @@ class GameChatTest(unittest.TestCase):
         text = config.data['text']['en']['player_hand']
         game, bob, joe, jim = setup_basic_game()
         cmdstring = 'cards'
-        msg = CAHmsg('Joe', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        parse_game_command(game, joe, cmdstring)
         hand = joe.show_hand()
         handstring = ' '.join(['[{}] {}'.format(i, card)
             for i, card
@@ -637,10 +648,7 @@ class GameChatTest(unittest.TestCase):
         game, bob, joe, jim = setup_basic_game()
         channel = game.channel
         cmdstring = 'commands'
-        msg = CAHmsg('Joe', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        parse_game_command(game, joe, cmdstring)
         expected = call(channel, CmdParser(game).get_commands())
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
 
@@ -650,10 +658,7 @@ class GameChatTest(unittest.TestCase):
         game, bob, joe, jim = setup_basic_game()
         channel = game.channel
         cmdstring = 'help'
-        msg = CAHmsg('Joe', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        parse_game_command(game, joe, cmdstring)
         expected = call(channel, help_blurb)
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
 
@@ -670,33 +675,25 @@ class GameChatTest(unittest.TestCase):
 
         # first attempt to join
         cmdstring = 'start'
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        bob = Player('Bob', 1)
+        parse_game_command(game, bob, cmdstring)
         expected = call(channel, welcome_wait)
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
 
         # second attempt to join (different message)
         double_join = config.data['text']['en']['double_join']
         cmdstring = 'join'
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
-        p.parse(msg)
-        game.command(p)
+        parse_game_command(game, bob, cmdstring)
         expected = call(channel, double_join)
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
 
         # third player joins
-        msg = CAHmsg('Joe', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        joe = Player('Joe', 2)
+        parse_game_command(game, joe, cmdstring)
         welcome_start = config.data['text']['en']['welcome_start']
         welcome_start = welcome_start.format(name='Jim')
-        msg = CAHmsg('Jim', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        jim = Player('Jim', 3)
+        parse_game_command(game, jim, cmdstring)
         expected = call(channel, welcome_start)
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[4])
 
@@ -704,10 +701,7 @@ class GameChatTest(unittest.TestCase):
         game, bob, joe, jim = setup_basic_game()
         channel = game.channel
         cmdstring = 'list'
-        msg = CAHmsg('Joe', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        parse_game_command(game, joe, cmdstring)
         self.assertTrue(re.search("Players currently in the game:", 
             str(gameclass.chat.Chat.say.mock_calls[-1])))
 
@@ -717,20 +711,14 @@ class GameChatTest(unittest.TestCase):
 
         # 'czar can't play' message
         cmdstring = 'play 1'
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        parse_game_command(game, bob, cmdstring)
         expected = call(channel, game.get_text('not_player'))
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
 
         # normal player plays
         card_nums = ' '.join([str(num) for num in range(game.question.pick)])
         cmdstring = 'play {}'.format(card_nums)
-        msg = CAHmsg('Joe', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        parse_game_command(game, joe, cmdstring)
         answer = game.format_answer(game.answers[joe]['cards'])
         expected = call('Joe', 
             game.get_text('answer_played').format(answer=answer))
@@ -738,20 +726,14 @@ class GameChatTest(unittest.TestCase):
 
         # normal player erroneously plays again
         cmdstring = 'play {}'.format(card_nums)
-        msg = CAHmsg('Joe', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        parse_game_command(game, joe, cmdstring)
         answer = game.format_answer(game.answers[joe]['cards'])
         expected = call(channel, game.get_text('already_played'))
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
 
         # final player plays
         cmdstring = 'play {}'.format(card_nums)
-        msg = CAHmsg('Jim', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        parse_game_command(game, jim, cmdstring)
         expected = call(channel, game.get_text('all_cards_played'))
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-4])
 
@@ -761,24 +743,15 @@ class GameChatTest(unittest.TestCase):
 
         # normal quit
         cmdstring = 'quit'
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        parse_game_command(game, bob, cmdstring)
         expected = call(channel, 
                         game.get_text('quit_message').format(player='Bob'))
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
 
         # game-ending quit
         cmdstring = 'quit'
-        msg = CAHmsg('Jim', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
-        msg = CAHmsg('Joe', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        parse_game_command(game, jim, cmdstring)
+        parse_game_command(game, joe, cmdstring)
         expected = call(channel, game.get_text('game_start'))
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
 
@@ -787,20 +760,15 @@ class GameChatTest(unittest.TestCase):
         game = gameclass.Game()
         channel = game.channel
         cmdstring = 'reload'
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        bob = Player('Bob', 1)
+        parse_game_command(game, bob, cmdstring)
         expected = call(channel, game.get_text('reload_announcement'))
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
 
         # reload during a game tells you to wait
         game, bob, joe, jim = setup_basic_game()
         cmdstring = 'reload'
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        parse_game_command(game, bob, cmdstring)
         expected = call(channel, game.get_text('reload_wait'))
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
 
@@ -811,10 +779,7 @@ class GameChatTest(unittest.TestCase):
         joe.points = 2
         jim.points = 5
         cmdstring = 'score'
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        parse_game_command(game, bob, cmdstring)
         self.assertTrue(re.search("The most horrible people:", 
             str(gameclass.chat.Chat.say.mock_calls[-1])))
 
@@ -824,10 +789,7 @@ class GameChatTest(unittest.TestCase):
         # the initial "start" command is already issued in setup_basic_game(),
         # and is accounted for in all the various tests that use it
         cmdstring = 'start'
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        parse_game_command(game, bob, cmdstring)
         expected = call(channel, game.get_text('game_already_started'))
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
 
@@ -837,38 +799,29 @@ class GameChatTest(unittest.TestCase):
         game.config['rando']['active'] = False
         channel = game.channel
         cmdstring = 'state'
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        bob = Player('Bob', 1)
+        parse_game_command(game, bob, cmdstring)
         expected = call(channel, game.get_text('status')['inactive'])
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
 
         # waiting for players
-        bob = Player('Bob')
-        joe = Player('Joe')
+        joe = Player('Joe', 2)
         game.start()
         game.add_player(bob)
         game.add_player(joe)
         cmdstring = 'state'
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        parse_game_command(game, bob, cmdstring)
         expected = call(channel, 
             game.get_text('status')['wait_players'].format(num=1))
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
 
         # wait_answers state
-        jim = Player('Jim')
+        jim = Player('Jim', 3)
         game.add_player(jim)
         game.question.value = "%s is silly"
         game.question.pick = 1
         cmdstring = 'state'
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        parse_game_command(game, bob, cmdstring)
         players = "Jim and Joe"
         question = game.question.formattedvalue
         expected = call(channel, 
@@ -878,19 +831,10 @@ class GameChatTest(unittest.TestCase):
 
         # wait_czar state
         cmdstring = 'play 1'
-        msg = CAHmsg('Jim', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
-        msg = CAHmsg('Joe', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        parse_game_command(game, jim, cmdstring)
+        parse_game_command(game, joe, cmdstring)
         cmdstring = 'state'
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        parse_game_command(game, bob, cmdstring)
         expected = call(channel, 
             game.get_text('status')['wait_czar'].format(czar='Bob'))
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-4])
@@ -902,29 +846,17 @@ class GameChatTest(unittest.TestCase):
         game.question.pick = 1
         channel = game.channel
         cmdstring = 'play 1'
-        msg = CAHmsg('Jim', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        parse_game_command(game, jim, cmdstring)
         cmdstring = 'play 1'
-        msg = CAHmsg('Joe', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        parse_game_command(game, joe, cmdstring)
         cmdstring = 'winner 0'
-        msg = CAHmsg('Joe', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        parse_game_command(game, joe, cmdstring)
         expected = call(channel, game.get_text('not_czar'))
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
 
         # now the czar picks
         cmdstring = 'winner 0'
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        parse_game_command(game, bob, cmdstring)
         self.assertTrue(re.search('Winner is: ', 
                                   str(gameclass.chat.Chat.say.mock_calls[-5])))
         text = game.get_text('round_announcement')
@@ -972,26 +904,20 @@ class RandoCalrissianTest(unittest.TestCase):
     def test_no_rando_players(self):
         game, bob, joe, jim = setup_basic_game(rando=True)
         cmdstring = 'join'
-        name = game.config['rando']['name']
-        msg = CAHmsg(name, cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        bad_player = Player(game.config['rando']['name'], 0)
+        parse_game_command(game, bad_player, cmdstring)
         text = game.get_text('no_rando_players')
-        text = text.format(rando=name)
+        text = text.format(rando=bad_player.nick)
         expected = call(game.channel, text)
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
 
     def test_rando_inactive_rando_ok(self):
         game, bob, joe, jim = setup_basic_game(rando=False)
         cmdstring = 'join'
-        name = game.config['rando']['name']
-        msg = CAHmsg(name, cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        player = Player(game.config['rando']['name'], 0)
+        parse_game_command(game, player, cmdstring)
         text = game.get_text('welcome_join')
-        text = text.format(name=name)
+        text = text.format(name=player.nick)
         expected = call(game.channel, text)
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-2])
 
@@ -1004,7 +930,7 @@ class RandoCalrissianTest(unittest.TestCase):
         for i in range(10):
             players_set = set(players)
             czar_set = set([players[czar]])
-            czar_name = players[czar].nick
+            czar_player = players[czar]
             round_players = list(players_set - czar_set)
 
             # players in the round
@@ -1013,19 +939,15 @@ class RandoCalrissianTest(unittest.TestCase):
                                   for num 
                                   in range(game.question.pick)])
                 cmdstring = f'play {cards}'
-                msg = CAHmsg(playername, cmdstring, 'pubmsg')
-                p = CmdParser(game)
-                p.parse(msg)
-                game.command(p)
-            cmdstring = f'winner 0'
-            msg = CAHmsg(czar_name, cmdstring, 'pubmsg')
-            p = CmdParser(game)
-            p.parse(msg)
-            game.command(p)
+                parse_game_command(game, playername, cmdstring)
+            # left off here.  for some reason, game.answer_order isn't
+            # being populated, so this generates a key error
+            cmdstring = 'winner 0'
+            parse_game_command(game, czar_player, cmdstring)
             text = game.get_text('round_announcement')
             czar = (czar + 1) % 3
-            czar_name = players[czar].nick
-            text = text.format(round_num=i+2, czar=czar_name)
+            czar_player = players[czar]
+            text = text.format(round_num=i+2, czar=czar_player.nick)
             expected = call(game.channel, text)
             self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-5])
         
@@ -1040,17 +962,15 @@ class RandoCalrissianTest(unittest.TestCase):
         text = game.get_text('rando_enabled')
         text = text.format(rando=game.config['rando']['name'])
         expected = call(game.channel, text)
-        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[1])
+        self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[2])
 
     def test_rando_allows_two_player_games(self):
         game = gameclass.Game()
         game.config['rando']['active'] = True
-        for name in ['Bob', 'Joe']:
+        for i, name in enumerate(['Bob', 'Joe']):
             cmdstring = 'join'
-            msg = CAHmsg(name, cmdstring, 'pubmsg')
-            p = CmdParser(game)
-            p.parse(msg)
-            game.command(p)
+            plyr = Player(name, i)
+            parse_game_command(game, plyr, cmdstring)
         text = game.get_text('question_announcement')
         text = text.format(card=game.question.formattedvalue)
         expected = call(game.channel, text)
@@ -1059,10 +979,7 @@ class RandoCalrissianTest(unittest.TestCase):
     def test_rando_basic_command(self):
         game, bob, jim, joe = setup_basic_game(rando=True)
         cmdstring = 'rando'
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        parse_game_command(game, bob, cmdstring)
         text = game.get_text('rando_is_playing')
         text = text.format(rando=game.config['rando']['name'])
         expected = call(game.channel, text)
@@ -1075,10 +992,7 @@ class RandoCalrissianTest(unittest.TestCase):
     def test_rando_basic_command_negative(self):
         game, bob, jim, joe = setup_basic_game(rando=False)
         cmdstring = 'rando'
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        parse_game_command(game, bob, cmdstring)
         text = game.get_text('rando_not_playing')
         text = text.format(rando=game.config['rando']['name'])
         expected = call(game.channel, text)
@@ -1091,10 +1005,7 @@ class RandoCalrissianTest(unittest.TestCase):
     def test_rando_enable_command(self):
         game, bob, jim, joe = setup_basic_game(rando=True)
         cmdstring = 'rando 1'
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        parse_game_command(game, bob, cmdstring)
         text = game.get_text('rando_enabled')
         text = text.format(rando=game.config['rando']['name'])
         expected = call(game.channel, text)
@@ -1103,10 +1014,7 @@ class RandoCalrissianTest(unittest.TestCase):
     def test_rando_disable_command(self):
         game, bob, jim, joe = setup_basic_game(rando=True)
         cmdstring = 'rando 0'
-        msg = CAHmsg('Bob', cmdstring, 'pubmsg')
-        p = CmdParser(game)
-        p.parse(msg)
-        game.command(p)
+        parse_game_command(game, bob, cmdstring)
         text = game.get_text('rando_disabled')
         text = text.format(rando=game.config['rando']['name'])
         expected = call(game.channel, text)
@@ -1126,7 +1034,6 @@ class TheBigTest(unittest.TestCase):
         while True:
             players_set = set(players)
             czar_set = set([players[czar]])
-            czar_name = players[czar].nick
             round_players = list(players_set - czar_set)
 
             # players in the round
@@ -1135,15 +1042,9 @@ class TheBigTest(unittest.TestCase):
                                   for num 
                                   in range(game.question.pick)])
                 cmdstring = f'play {cards}'
-                msg = CAHmsg(playername.nick, cmdstring, 'pubmsg')
-                p = CmdParser(game)
-                p.parse(msg)
-                game.command(p)
+                parse_game_command(game, playername, cmdstring)
             cmdstring = 'winner 0'
-            msg = CAHmsg(czar_name, cmdstring, 'pubmsg')
-            p = CmdParser(game)
-            p.parse(msg)
-            game.command(p)
+            parse_game_command(game, players[czar], cmdstring)
             czar = (czar + 1) % 3
 
             if game.status == 'inactive':

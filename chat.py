@@ -13,22 +13,20 @@ logger = logging.getLogger(__name__)
 
 class CAHmsg:
     """ message object """
-    def __init__(self, nick, message, source):
-        self.nick = nick
+    def __init__(self, player, message, source):
+        if not isinstance(player, Player):
+            raise TypeError('First arg must be a Player object')
+        self.player = player
         self.message = message
         self.source = source
 
     def __repr__(self):
-        return f'CAHmsg("{self.nick}", "{self.message}", "{self.source}")'
+        return f'CAHmsg("{self.player.nick}", "{self.message}", "{self.source}")'
 
     def json(self):
-        return json.dumps({'nick': self.nick, 
+        return json.dumps({'nick': self.player.nick, 
                            'message': self.message,
                            'source': self.source})
-
-    def make_player(self):
-        return Player(self.nick)
-
 
 class Chat:
     """
@@ -61,9 +59,9 @@ class Chat:
         logger.info("Starting Chat subsystem")
         self.system.start()
 
-    def say(self, destination: str, text: str) -> None:
+    def say(self, destination, text: str) -> None:
         """ say something to the requested destination.  destination
-        should be either an individual identifier (for a direct message
+        should be either a player object (for a direct message
         to a person) or a channel name. """
         self.system.say(destination, text)
 

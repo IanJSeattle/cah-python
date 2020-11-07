@@ -30,7 +30,6 @@ class Game(object):
         self.answers = {}
         self.answer_order = {}
         self.deck = Deck()
-        self.rando_player = None
         self.configobj = config.Config()
         self.config = self.configobj.data
         self.lang = self.config['language']
@@ -296,9 +295,9 @@ class Game(object):
                                player_word=player_word)
             self.chat.say(self.channel, text)
 
-    def get_player(self, nick: str) -> Player:
+    def get_player(self, test_player: Player) -> Player:
         for player in self.players:
-            if player.nick == nick:
+            if player == test_player:
                 return player
         return None
 
@@ -479,7 +478,8 @@ class Game(object):
         self.chat.say(self.channel, text)
 
     def add_rando(self):
-            rando = Player(self.config['rando']['name'])
+            rando = Player(self.config['rando']['name'], 
+                'Rando Calrissian, bot of emminence')
             self.players.append(rando)
             self.deal_one_player(rando, self.config['hand_size'])
             #self._czar += 1

@@ -3,12 +3,21 @@
 from deck import Deck
 
 class Player(object):
-    def __init__(self, nick):
+    def __init__(self, nick, user_id):
         self.nick = nick
+        self.user_id = user_id
         self.deck = Deck()
         self.points = 0
         self.game_wins = 0
         self.games_played = 0
+
+    def __eq__(self, other):
+        if other == None:
+            return None
+        return self.user_id == other.user_id
+
+    def __hash__(self):
+        return hash(self.user_id)
 
     def __repr__(self):
         return '{} [{}, {}/{}]'.format(self.nick, self.points,

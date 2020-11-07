@@ -27,7 +27,6 @@ class Cahirc(irc.bot.SingleServerIRCBot):
         super().__init__([(self.server, self.port)], nickname, nickname)
         self.channel = config['chat']['irc']['default_channel']
         self.started = False
-        threading.Timer(20, self.ping).start()
 
     #------------------------------------------------------------
     # IRC bot functions
@@ -45,6 +44,7 @@ class Cahirc(irc.bot.SingleServerIRCBot):
             self.started = True
             super().start()
             logger.info('IRC started')
+            threading.Timer(20, self.ping).start()
 
     def stop(self, text):
         self.die(text)
