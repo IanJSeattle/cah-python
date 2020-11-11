@@ -62,10 +62,16 @@ class Cahirc(irc.bot.SingleServerIRCBot):
         self.say(self.channel, self.game.get_text('game_start'))
 
     def on_privmsg(self, connection, event):
-        self.game.chat.receive_msg(chat.CAHmsg(event.source.nick, event.arguments[0], event.type))
+        player = self.get_player(event)
+        self.game.chat.receive_msg(chat.CAHmsg(player, 
+                                               event.arguments[0], 
+                                               event.type))
 
     def on_pubmsg(self, connection, event):
-        self.game.chat.receive_msg(chat.CAHmsg(event.source.nick, event.arguments[0], event.type))
+        player = self.get_player(event)
+        self.game.chat.receive_msg(chat.CAHmsg(player, 
+                                               event.arguments[0], 
+                                               event.type))
 
     #------------------------------------------------------------
     # CAH specific functions
@@ -74,8 +80,23 @@ class Cahirc(irc.bot.SingleServerIRCBot):
     @logtime
     def say(self, destination, text):
         """ recipient is either the channel name, or the nick for a privmsg """
+        if isinstance(destination, Player):
+            destination = destination.nick
         logger.debug('Sending to {}: {}'.format(destination, text))
         self.connection.privmsg(destination, text)
+
+    def get_player(self, event):
+        """ determine whether this player is already registered with
+        the game. if they are, return the game Player, otherwise create
+        a new Player object. """
+        user_id = event.source.userhost
+        nick = event.source.nick
+        tmp_player = Player(nick, user_id)
+        for game_player in self.game.players:
+            if game_player == tmp_player:
+                game_player.nick = nick # update in case of nick change
+                return game_player
+        return tmp_player
 
 
 class IRCmsg(object):

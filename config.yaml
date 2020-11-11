@@ -20,7 +20,7 @@ chat:
   dialect: irc # which type of chat to use: pick "irc" or "mattermost"
   irc:
     default_channel: "#test"
-    server: "irc.domain.com"
+    server: "irc.muppetlabs.com"
     port: 6667
     my_nick: "pycardbot"
     ping_interval: 120

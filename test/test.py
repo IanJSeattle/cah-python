@@ -579,7 +579,7 @@ class ParserTest(unittest.TestCase):
         answer_text = f'foo is {answer}'
         text = game.get_text('player_played')
         text = text.format(card=answer_text)
-        expected = call('Joe', text)
+        expected = call(joe, text)
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
 
     def test_join_before_start_just_starts(self):
@@ -640,7 +640,7 @@ class GameChatTest(unittest.TestCase):
             for i, card
             in enumerate(hand)])
         text = text.format(cards=handstring)
-        expected = call('Joe', text)
+        expected = call(joe, text)
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
 
     def test_commands_command_uses_chat(self):
@@ -720,7 +720,7 @@ class GameChatTest(unittest.TestCase):
         cmdstring = 'play {}'.format(card_nums)
         parse_game_command(game, joe, cmdstring)
         answer = game.format_answer(game.answers[joe]['cards'])
-        expected = call('Joe', 
+        expected = call(joe, 
             game.get_text('answer_played').format(answer=answer))
         self.assertEqual(expected, gameclass.chat.Chat.say.mock_calls[-1])
 
@@ -954,8 +954,15 @@ class RandoCalrissianTest(unittest.TestCase):
         # this is technically a separate test, but i didn't want to duplicate
         # this big structure just to test this one little thing.
         # here we're making sure rando doesn't get any privmsgs
+        rando = None
+        for player in game.players:
+            if player.nick == game.config['rando']['name']:
+                rando = player
         for msg in gameclass.chat.Chat.say.mock_calls:
-            self.assertNotEqual(game.config['rando']['name'], msg[1][0], msg)
+            try:
+                self.assertNotEqual(rando, msg[1][0], msg)
+            except TypeError:
+                self.assertEqual(game.channel, msg[1][0])
 
     def test_rando_announces_himself(self):
         game, bob, joe, jim = setup_basic_game(rando=True)

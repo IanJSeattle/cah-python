@@ -51,7 +51,7 @@ class Game(object):
             return
         annc = self.get_text('question_announcement')
         annc = annc.format(card=self.question.formattedvalue)
-        self.chat.say(player.nick, annc)
+        self.chat.say(player, annc)
         self.show_hand(player)
 
     def commands(self, player, args):
@@ -113,7 +113,7 @@ class Game(object):
             answer = self.format_answer(self.answers[player]['cards'])
             rando = self.config['rando']
             if player.nick != rando['name'] or not rando['active']:
-                self.chat.say(player.nick,
+                self.chat.say(player,
                     self.get_text('answer_played').format(answer=answer))
         else:
             self.chat.say(self.channel, self.get_text('already_played'))
@@ -444,7 +444,7 @@ class Game(object):
         handstring = ' '.join(['[{}] {}'.format(i, card) 
             for i, card
             in enumerate(hand)])
-        self.chat.say(player.nick, annc.format(cards=handstring))
+        self.chat.say(player, annc.format(cards=handstring))
 
     def score_list(self):
         max_points = self.config['max_points']

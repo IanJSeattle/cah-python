@@ -14,7 +14,11 @@ class Player(object):
     def __eq__(self, other):
         if other == None:
             return None
-        return self.user_id == other.user_id
+        if isinstance(other, Player):
+            return self.user_id == other.user_id
+        else:
+            obj = type(other)
+            raise TypeError(f'Player object cannot be compared to {obj}')
 
     def __hash__(self):
         return hash(self.user_id)
